@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>Super sledge</title>
+  <polygon points="41,101 50,107 131,46 122,35" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polygon points="113,16 140,11 169,27 177,51 165,67 135,58 116,39" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polygon points="137,20 159,30 166,48 155,54 139,45 130,31" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="108" y="28" width="15" height="17" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="147" y1="24" x2="140" y2="44" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="47" y1="90" x2="57" y2="101" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="57" y1="82" x2="67" y2="93" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="67" y1="74" x2="77" y2="85" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="77" y1="66" x2="87" y2="77" fill="none" stroke="#42b610" stroke-width="2" />
+</svg>

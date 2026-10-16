@@ -1,54 +1,62 @@
 #include "Pipboy.h"
-#define APP_INV_MENU_ITEMS 5
-bool isInvMenuReady = false;
+#include <Inventory.h>
+#include "assets/fallout10.h"
 
-// STATUS SPECIAL PERKS
-menuItem appInvMenu[APP_INV_MENU_ITEMS] = {
-  {"WEAPONS", 7, {0, 0, 0, 0}, appInvWeapons},
-  {"APPAREL", 7, {0, 0, 0, 0}, appInvApparel},
-  {"AID",     3, {0, 0, 0, 0}, appInvAid},
-  {"MISC",    4, {0, 0, 0, 0}, appInvMisc},
-  {"JUNK",    4, {0, 0, 0, 0}, appInvJunk},
+namespace {
+bool menuReady = false;
+menuItem inventoryMenu[] = {
+  {"WEAPONS", 7, {}, appInvWeapons},
+  {"APPAREL", 7, {}, appInvApparel},
+  {"AID",     3, {}, appInvAid},
+  {"MISC",    4, {}, appInvMisc},
+  {"JUNK",    4, {}, appInvJunk},
 };
 
-void setupInvMenu()
-{
-  setupSubMenu(appInvMenu, APP_INV_MENU_ITEMS);
-  isInvMenuReady = true;
-}
-
-void appInv()
-{
-  if (!isInvMenuReady) {
-    setupInvMenu();
+class DisplayCanvas : public inventory::Canvas {
+public:
+  void line(int x1, int y1, int x2, int y2, uint16_t color) override {
+    gfx->drawLine(x1, y1, x2, y2, color);
   }
+  void triangle(int x1, int y1, int x2, int y2, int x3, int y3, uint16_t color) override {
+    gfx->fillTriangle(x1, y1, x2, y2, x3, y3, color);
+  }
+  void rectangle(int x, int y, int width, int height, uint16_t color) override {
+    gfx->fillRect(x, y, width, height, color);
+  }
+  void text(int x, int baseline, const char* value, uint16_t color) override {
+    gfx->setTextColor(color);
+    gfx->setCursor(x, baseline);
+    gfx->print(value);
+  }
+};
 
-  subMenuItems = APP_INV_MENU_ITEMS;
-
-  drawMenu(
-    appInvMenu,
-    APP_INV_MENU_ITEMS,
-    subMenuNum,
-    COLOR_MAIN,
-    COLOR_INACTIVE,
-    menuItems[1].g.x - appInvMenu[subMenuNum].g.x
-  );
-
-  appInvMenu[subMenuNum].app();
+void drawCategory(size_t index) {
+  const auto* category = inventory::category(index);
+  listMenuItems = category ? category->count : 0;
+  listMenuNum = category ? inventory::clampSelection(*category, listMenuNum) : 0;
+  DisplayCanvas canvas;
+  gfx->setFont(&monofonto10pt7b);
+  inventory::render(canvas, index, listMenuNum, isSubMenuEncoderControlList);
+  setUiFont();
+}
 }
 
-void appInvWeapons() {
-
+void setupInvMenu() {
+  setupSubMenu(inventoryMenu, inventory::categoryCount);
+  menuReady = true;
 }
-void appInvApparel() {
 
+void appInv() {
+  if (!menuReady) setupInvMenu();
+  subMenuItems = inventory::categoryCount;
+  if (subMenuNum >= subMenuItems) subMenuNum = 0;
+  drawMenu(inventoryMenu, subMenuItems, subMenuNum, COLOR_MAIN, COLOR_INACTIVE,
+           menuItems[1].g.x - inventoryMenu[subMenuNum].g.x);
+  inventoryMenu[subMenuNum].app();
 }
-void appInvAid() {
 
-}
-void appInvMisc() {
-
-}
-void appInvJunk() {
-
-}
+void appInvWeapons() { drawCategory(0); }
+void appInvApparel() { drawCategory(1); }
+void appInvAid()     { drawCategory(2); }
+void appInvMisc()    { drawCategory(3); }
+void appInvJunk()    { drawCategory(4); }

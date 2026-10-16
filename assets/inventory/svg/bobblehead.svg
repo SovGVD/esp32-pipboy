@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>Vault-Tec bobblehead</title>
+  <ellipse cx="101" cy="29" rx="24" ry="22" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polygon points="79,21 85,10 109,8 123,21 109,18 103,12 95,21" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="89" y1="29" x2="93" y2="29" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="109" y1="29" x2="113" y2="29" fill="none" stroke="#42b610" stroke-width="2" />
+  <polyline points="92,39 101,43 111,38" fill="none" stroke="#42b610" stroke-width="2" />
+  <polygon points="88,51 112,51 125,65 132,54 140,58 132,81 120,79 114,71 115,88 107,91 104,109 91,109 92,89 83,87 82,64 74,78 65,74 75,56" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="99" y1="54" x2="99" y2="85" fill="none" stroke="#42b610" stroke-width="2" />
+  <rect x="81" y="85" width="35" height="7" fill="#000" stroke="#42b610" stroke-width="2" />
+  <ellipse cx="100" cy="112" rx="28" ry="4" fill="#000" stroke="#42b610" stroke-width="2" />
+</svg>

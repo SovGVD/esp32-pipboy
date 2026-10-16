@@ -49,6 +49,21 @@ and 480×272 framebuffer. SD and NS4163 audio wiring matches the working
 to SPI2, which conflicts with the SD card. PSRAM is required for the display,
 audio buffers and music catalog.
 
+## Illustrated inventory in INV
+
+WEAPONS, APPAREL, AID, MISC and JUNK each contain six representative Fallout 4
+items. Each selection shows an original green vector illustration, item type
+or ammunition/material, and a short description.
+
+Turn the secondary encoder to choose a category, click to browse its items,
+and hold to return to category selection. This is a reference inventory;
+selecting an item does not equip gear or consume supplies.
+
+See the [item guide, sources and editable SVG workflow](docs/inventory/README.md)
+and the [30-screen preview sheet](docs/inventory/previews/contact-sheet.png).
+After editing the catalog or SVGs, run `python3 scripts/build_inventory.py`
+before building. The generated firmware data is included in the repository.
+
 ## SD music in RADIO
 
 1. Format an SD card as FAT32 and copy `.mp3` files to its root or subfolders.

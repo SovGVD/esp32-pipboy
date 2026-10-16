@@ -65,7 +65,7 @@ void setup()
     gfx->flush();
   #endif
 
-  gfx->setFont(&monofonto11pt7b);
+  setUiFont();
 
   gif.begin(BIG_ENDIAN_PIXELS);
 
@@ -137,6 +137,10 @@ void callApp()
   listMenuItems = 0;
   menuItem item = getCurrentMenuItem();
   item.app();
+}
+
+void setUiFont() {
+  gfx->setFont(&monofonto11pt7b);
 }
 
 /**

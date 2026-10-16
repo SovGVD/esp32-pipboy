@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>Hunting rifle</title>
+  <polygon points="9,64 43,50 74,54 137,55 137,64 83,67 68,78 59,93 46,90 50,72 12,88" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="103" y="49" width="83" height="5" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="66" y="38" width="60" height="9" fill="#000" stroke="#42b610" stroke-width="2" />
+  <ellipse cx="65" cy="42" rx="4" ry="7" fill="#000" stroke="#42b610" stroke-width="2" />
+  <ellipse cx="128" cy="42" rx="4" ry="7" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="79" y1="48" x2="79" y2="54" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="113" y1="48" x2="113" y2="54" fill="none" stroke="#42b610" stroke-width="2" />
+  <polyline points="72,68 76,81 87,79 89,66" fill="none" stroke="#42b610" stroke-width="2" />
+  <polyline points="105,57 99,50 97,51" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="19" y1="73" x2="43" y2="62" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="179" y1="44" x2="179" y2="48" fill="none" stroke="#42b610" stroke-width="2" />
+</svg>

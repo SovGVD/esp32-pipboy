@@ -131,6 +131,7 @@ void appStatSpecialAgility();
 void appStatSpecialLuck();
 void appPerks();
 void setupInvMenu();
+void setUiFont();
 void appInv();
 void appInvWeapons();
 void appInvApparel();

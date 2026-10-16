@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>Leather chest piece</title>
+  <polygon points="63,16 82,13 92,26 108,26 120,13 139,20 134,46 122,48 130,92 112,107 79,103 68,89 76,49 60,45" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polygon points="77,38 95,30 118,38 123,83 104,96 82,86" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polyline points="67,20 82,44 113,90" fill="none" stroke="#42b610" stroke-width="2" />
+  <polyline points="131,21 119,44 84,89" fill="none" stroke="#42b610" stroke-width="2" />
+  <rect x="79" y="61" width="14" height="10" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="111" y="51" width="12" height="10" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="89" y1="47" x2="108" y2="42" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="90" y1="79" x2="108" y2="85" fill="none" stroke="#42b610" stroke-width="2" />
+</svg>

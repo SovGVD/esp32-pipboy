@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>10mm pistol</title>
+  <polygon points="32,34 145,34 157,41 157,54 107,54 107,64 83,66 73,103 47,101 54,64 33,61" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="146" y="40" width="24" height="12" fill="#000" stroke="#42b610" stroke-width="2" />
+  <rect x="48" y="27" width="10" height="7" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="42" y1="42" x2="140" y2="42" fill="none" stroke="#42b610" stroke-width="2" />
+  <polygon points="76,65 100,65 100,81 76,81" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polyline points="88,66 86,75 91,76" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="53" y1="75" x2="68" y2="77" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="53" y1="81" x2="68" y2="83" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="53" y1="87" x2="68" y2="89" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="53" y1="93" x2="68" y2="95" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="42" y1="47" x2="42" y2="57" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="47" y1="47" x2="47" y2="57" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="52" y1="47" x2="52" y2="57" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="57" y1="47" x2="57" y2="57" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="62" y1="47" x2="62" y2="57" fill="none" stroke="#42b610" stroke-width="2" />
+  <ellipse cx="119" cy="49" rx="3" ry="3" fill="#000" stroke="#42b610" stroke-width="2" />
+</svg>

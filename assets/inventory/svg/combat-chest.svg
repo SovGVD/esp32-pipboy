@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" role="img" style="background:#000">
+  <title>Combat chest piece</title>
+  <polygon points="67,15 86,12 93,26 108,26 115,12 134,16 148,43 129,55 126,91 112,106 88,106 73,92 71,54 52,43" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polygon points="80,38 120,38 128,64 114,85 86,85 73,64" fill="#000" stroke="#42b610" stroke-width="2" />
+  <polyline points="82,47 100,56 118,47" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="100" y1="56" x2="100" y2="79" fill="none" stroke="#42b610" stroke-width="2" />
+  <rect x="85" y="90" width="31" height="12" fill="#000" stroke="#42b610" stroke-width="2" />
+  <line x1="58" y1="38" x2="72" y2="45" fill="none" stroke="#42b610" stroke-width="2" />
+  <line x1="128" y1="45" x2="142" y2="38" fill="none" stroke="#42b610" stroke-width="2" />
+  <rect x="88" y="59" width="24" height="9" fill="#000" stroke="#42b610" stroke-width="2" />
+</svg>
