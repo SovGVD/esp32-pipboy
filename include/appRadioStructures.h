@@ -1,4 +1,8 @@
-typedef struct radioPeer {
+#pragma once
+
+#include <cstdint>
+
+struct radioPeer {
   char name[16];
   uint8_t nameLength;
   signed int rssi;
@@ -7,7 +11,7 @@ typedef struct radioPeer {
   bool isBroadcast;
 };
 
-typedef struct radioMsg {
+struct radioMsg {
   char body[127];
   uint8_t len;
 };

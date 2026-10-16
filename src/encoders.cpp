@@ -1,3 +1,4 @@
+#include "Pipboy.h"
 int32_t currentMenuEncoderPosition = 0;
 int32_t previousMenuEncoderPosition = 0;
 int32_t currentSubMenuEncoderPosition = 0;
@@ -32,6 +33,7 @@ void encoderUpdate()
 }
 
 void onSubMenuClicked(EncoderButton& eb) {
+  if (isDisplayMessageWindow) { isSubMenuButtonClicked = true; return; }
   if (!isSubMenuEncoderControlList) {
     Serial.println("Set sub menu");
     isSubMenuEncoderControlList = true;
@@ -67,7 +69,7 @@ void updateMenuByEncoder()
 
 void updateSubMenuByEncoder()
 {
-  if (isSubMenuEncoderControlList) {
+  if (isSubMenuEncoderControlList || !subMenuItems) {
     return;
   }
 
@@ -86,7 +88,7 @@ void updateSubMenuByEncoder()
 
 void updateListByEncoder()
 {
-  if (!isSubMenuEncoderControlList) {
+  if (!isSubMenuEncoderControlList || !listMenuItems) {
     return;
   }
 
@@ -104,12 +106,14 @@ void updateListByEncoder()
 void resetSubMenu()
 {
   subMenuNum = 0;
+  subMenuItems = 0;
   isSubMenuEncoderControlList = false;
 }
 
 void resetListItemMenu()
 {
   listMenuNum = 0;
+  listMenuItems = 0;
   isSubMenuEncoderControlList = false;
 }
 

@@ -1,3 +1,5 @@
+#include "Pipboy.h"
+#include "assets/vaultboy.gif.h"
 #define APP_STAT_MENU_ITEMS 3
 bool isStatMenuReady = false;
 
@@ -32,6 +34,7 @@ void setupStat()
 void setupStatMenu()
 {
   setupSubMenu(appStatMenu, APP_STAT_MENU_ITEMS);
+  isStatMenuReady = true;
 }
 
 void appStat()
@@ -43,8 +46,8 @@ void appStat()
   subMenuItems = APP_STAT_MENU_ITEMS;
 
   drawMenu(
-    appStatMenu, 
-    APP_STAT_MENU_ITEMS, 
+    appStatMenu,
+    APP_STAT_MENU_ITEMS,
     subMenuNum,
     COLOR_MAIN,
     COLOR_INACTIVE,
@@ -57,7 +60,7 @@ void appStat()
 
 void appStatus()
 {
-  gif.playFrame(true, NULL);
+  gif.playFrame(true, nullptr);
 }
 
 void appStatBar()
@@ -75,17 +78,17 @@ void appStatBar()
   gfx->printf("LEVEL %d", stat_level);
 
   gfx->drawRect(
-    STATUS_BAR_SIDE_WIDTH + STATUS_BAR_PADDING + LEVEL_TEXT_LENGTH, 
-    h - STATUS_BAR_HEIGHT + 10, 
-    w - STATUS_BAR_SIDE_WIDTH*2 - STATUS_BAR_PADDING * 2 - LEVEL_TEXT_LENGTH - 10, 
-    STATUS_BAR_HEIGHT - 20, 
+    STATUS_BAR_SIDE_WIDTH + STATUS_BAR_PADDING + LEVEL_TEXT_LENGTH,
+    h - STATUS_BAR_HEIGHT + 10,
+    w - STATUS_BAR_SIDE_WIDTH*2 - STATUS_BAR_PADDING * 2 - LEVEL_TEXT_LENGTH - 10,
+    STATUS_BAR_HEIGHT - 20,
     COLOR_MAIN);
 
   gfx->fillRect(
-    STATUS_BAR_SIDE_WIDTH + STATUS_BAR_PADDING + LEVEL_TEXT_LENGTH + 2, 
-    h - STATUS_BAR_HEIGHT + 10 + 2, 
-    w - STATUS_BAR_SIDE_WIDTH*2 - STATUS_BAR_PADDING * 2 - LEVEL_TEXT_LENGTH - 10 - stat_progress, 
-    STATUS_BAR_HEIGHT - 20 - 4, 
+    STATUS_BAR_SIDE_WIDTH + STATUS_BAR_PADDING + LEVEL_TEXT_LENGTH + 2,
+    h - STATUS_BAR_HEIGHT + 10 + 2,
+    w - STATUS_BAR_SIDE_WIDTH*2 - STATUS_BAR_PADDING * 2 - LEVEL_TEXT_LENGTH - 10 - stat_progress,
+    STATUS_BAR_HEIGHT - 20 - 4,
     COLOR_MAIN);
 
 
@@ -139,43 +142,43 @@ void appSpecial()
 
 void appStatSpecialStrength()
 {
-  displayTxt("Strength is a measure of your raw physical power. It affects how much you can carry, and the damage of all melee attacks.", 
+  displayTxt("Strength is a measure of your raw physical power. It affects how much you can carry, and the damage of all melee attacks.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialPerception()
 {
-  displayTxt("Perception is your     environmental awareness and \"sixth sense\", and affects weapon accuracy in VATS.", 
+  displayTxt("Perception is your     environmental awareness and \"sixth sense\", and affects weapon accuracy in VATS.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialEndurance()
 {
-  displayTxt("Endurance is a measure of your overall physical fitness. It affects your total Health and the Action Point drain from sprinting.", 
+  displayTxt("Endurance is a measure of your overall physical fitness. It affects your total Health and the Action Point drain from sprinting.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialCharisma()
 {
-  displayTxt("Charisma is your ability to charm and convince others. It affects your success to persuade in dialogue and prices when you barter.", 
+  displayTxt("Charisma is your ability to charm and convince others. It affects your success to persuade in dialogue and prices when you barter.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialIntelligence()
 {
-  displayTxt("Intelligence is a measure of your overall mental acuity, and affects the number of Experience Points earned.", 
+  displayTxt("Intelligence is a measure of your overall mental acuity, and affects the number of Experience Points earned.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialAgility()
 {
-  displayTxt("Agility is a measure of your overall finesse and reflexes. It affects the number of Action Points in VATS and your ability to sneak.", 
+  displayTxt("Agility is a measure of your overall finesse and reflexes. It affects the number of Action Points in VATS and your ability to sneak.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 
 void appStatSpecialLuck()
 {
-  displayTxt("Luck is a measure of your general good fortune, and affects the recharge rate of Critical Hits.", 
+  displayTxt("Luck is a measure of your general good fortune, and affects the recharge rate of Critical Hits.",
   APP_STAT_SPECIAL_X, APP_STAT_SPECIAL_Y, APP_STAT_SPECIAL_W);
 }
 

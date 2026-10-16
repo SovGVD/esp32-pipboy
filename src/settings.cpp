@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+#include "Pipboy.h"
 #define EEPROM_OFFSET 0
 uint8_t pipboySettingsEepromSize = 0;
 
@@ -14,6 +16,7 @@ void settingsLoad()
 
 void settingsCheck()
 {
+  settings.pipboyName[sizeof(settings.pipboyName) - 1] = '\0';
   if (settings.version == PIPBOY_SETTINGS_VERSION) {
 	  Serial.println("Settings valid.");
 	  return;
@@ -33,7 +36,7 @@ void settingsInitEEPROM()
 	EEPROM.get(EEPROM_OFFSET, settings);
 
 	settings.version = PIPBOY_SETTINGS_VERSION;
-  
+
   settings.pipboyName[0] = 'P';
   settings.pipboyName[1] = 'I';
   settings.pipboyName[2] = 'P';
@@ -50,7 +53,9 @@ void settingsInitEEPROM()
 
 void settingsSanitize()
 {
+  settings.pipboyName[sizeof(settings.pipboyName) - 1] = '\0';
   settingsSanitizeClearSpaces();
+  if (!settings.pipboyName[0]) strcpy(settings.pipboyName, "PIPBOY");
 }
 
 void settingsSanitizeClearSpaces()

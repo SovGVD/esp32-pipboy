@@ -1,3 +1,9 @@
+#include <WiFi.h>
+#include <QuickEspNow.h>
+#include "MusicPlayer.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include "Pipboy.h"
 const char* PIPBOY_RADIO_DELIMETER = "\t";  // tab
 const char* PIPBOY_RADIO_HEADER = "PIPBOY";
 const char* PIPBOY_RADIO_PING = "P";
@@ -38,8 +44,8 @@ unsigned long previousPingTime;
 bool isRadioMenuReady = false;
 
 menuItem appRadioMenu[APP_RADIO_MENU_ITEMS] = {
+  {"MUSIC",  5, {0, 0, 0, 0}, appPlayer},
   {"EMOTES", 6, {0, 0, 0, 0}, appEmotes},
-  {"RADIO",  5, {0, 0, 0, 0}, appPlayer},
 };
 
 #define APP_RADIO_EMOTES_MENU_ITEMS 12
@@ -62,12 +68,8 @@ menuItem appRadioEmotes[APP_RADIO_EMOTES_MENU_ITEMS] = {
 
 void setupAppRadioMenu()
 {
-  // Set menu item as name
-  appRadioMenu[0].nameLength = strlen(settings.pipboyName);
-  strncpy(appRadioMenu[0].name, settings.pipboyName, appRadioMenu[0].nameLength);
-  appRadioMenu[0].name[appRadioMenu[0].nameLength] = '\0';
-
   setupSubMenu(appRadioMenu, APP_RADIO_MENU_ITEMS);
+  isRadioMenuReady = true;
 }
 
 void appRadio()
@@ -79,8 +81,8 @@ void appRadio()
   subMenuItems = APP_RADIO_MENU_ITEMS;
 
   drawMenu(
-    appRadioMenu, 
-    APP_RADIO_MENU_ITEMS, 
+    appRadioMenu,
+    APP_RADIO_MENU_ITEMS,
     subMenuNum,
     COLOR_MAIN,
     COLOR_INACTIVE,
@@ -102,7 +104,10 @@ void appEmotes()
     return;
   }
 
-  isSubMenuEncoderControlList = true;
+  if (isPeerSelected && !pipboyPeers[selectedPeerIdx].isOnline) {
+    isPeerSelected = false;
+    listMenuNum = 0;
+  }
 
   if (isPeerSelected) {
     appRadioEmoteSelector();
@@ -135,7 +140,8 @@ void appRadioPeerSelector()
    * @TODO broadcast option
    */
   uint8_t menuIdx = 0;
-  menuItem peers[pipboyPeersCount];
+  menuItem peers[PIPBOY_RADIO_MAX_PEERS] = {};
+  if (listMenuNum >= pipboyPeersCount) listMenuNum = pipboyPeersCount - 1;
 
   for (uint8_t idx = 0; idx < PIPBOY_RADIO_MAX_PEERS; idx++) {
     if (!pipboyPeers[idx].isOnline) {
@@ -157,7 +163,7 @@ void appRadioPeerSelector()
   }
 
   listMenuItems = pipboyPeersCount;
- 
+
   drawListMenu(
     peers,
     pipboyPeersCount,
@@ -188,8 +194,21 @@ void appRadioPeerItem()
   isPeerSelected = true;
 }
 
+namespace {
+struct ReceivedPacket {
+  char body[127];
+  int rssi;
+};
+QueueHandle_t receivedPackets = nullptr;
+}
+
 void setupRadio()
 {
+  receivedPackets = xQueueCreate(4, sizeof(ReceivedPacket));
+  if (!receivedPackets) {
+    Serial.println("Cannot create ESP-NOW receive queue");
+    return;
+  }
   WiFi.mode(WIFI_MODE_STA);
   WiFi.disconnect(false, true);
   Serial.printf ("Connected to %s in channel %d\n", WiFi.SSID ().c_str (), WiFi.channel ());
@@ -201,44 +220,16 @@ void setupRadio()
 
 void radioDataReceived(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast)
 {
-  // Serial.print("Received: ");
-  // Serial.printf("%d bytes ", len);
-  // Serial.printf("%.*s\n", len, data);
-  // Serial.printf("RSSI: %d dBm\n", rssi);
-  // // Serial.printf("From: %s\n", MAC2STR(address));
-  // Serial.printf("%s\n", broadcast ? "Broadcast" : "Unicast");
-
-  char msg[len+1];
-
-  strncpy(msg, (char*)data, len + 1);
-  msg[len] = '\0';
-
-  char * dataHeader = strtok(msg, PIPBOY_RADIO_DELIMETER);
-  if (strcmp(dataHeader, PIPBOY_RADIO_HEADER) != 0) {
-    Serial.printf("ERR: not a pipboy msg, expected [%s]\n", PIPBOY_RADIO_HEADER);
-    return;
-  }
-
-//  Serial.println(1);
-  char * dataFrom = strtok(NULL, PIPBOY_RADIO_DELIMETER);
-//  Serial.printf("FROM: [%s]\n", dataFrom);
-  char * dataTo   = strtok(NULL, PIPBOY_RADIO_DELIMETER);
-//  Serial.printf("TO: [%s]\n", dataTo);
-  char * dataCmd  = strtok(NULL, PIPBOY_RADIO_DELIMETER);
-//  Serial.printf("CMD: [%s]\n", dataCmd);
-  char * dataBody = strtok(NULL, PIPBOY_RADIO_DELIMETER);
-//  Serial.printf("Body: [%s]\n", dataBody);
-
-  // Serial.printf("m[%s](%d),from[%s](%d),to[%s](%d),cmd[%s](%d),body[%s](%d)", 
-  //   msg, strlen(msg), 
-  //   dataFrom, strlen(dataFrom), 
-  //   dataTo, strlen(dataTo), 
-  //   dataCmd, strlen(dataCmd), 
-  //   dataBody, strlen(dataBody)
-  // );
-
-  processRadioMessage(dataCmd, dataFrom, dataTo, dataBody, rssi);
+  // WiFi callback runs on another task. Validate and copy exactly len bytes;
+  // parsing and all peer/UI updates happen later on the main loop.
+  if (!receivedPackets || !data || !len || len >= sizeof(ReceivedPacket::body) ||
+      memchr(data, '\0', len)) return;
+  ReceivedPacket packet = {};
+  memcpy(packet.body, data, len);
+  packet.rssi = rssi;
+  xQueueSend(receivedPackets, &packet, 0);
 }
+
 
 bool radioIsForThisPipboy(char* to)
 {
@@ -273,7 +264,7 @@ void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int
 
 void processRadioMessageEmote(char* from, char* emote)
 {
-  char* peerName = "UNKWNOWN";
+  const char* peerName = "UNKNOWN";
   for (uint8_t idx = 0; idx < PIPBOY_RADIO_MAX_PEERS; idx++) {
     if (strlen(pipboyPeers[idx].name) == strlen(from) && memcmp(pipboyPeers[idx].name, from, strlen(from)) == 0) {
       peerName = (char*) pipboyPeers[idx].name;
@@ -328,7 +319,8 @@ void radioRegisterOrUpdateClient(char* peerName, signed int rssi)
     return;
   }
 
-  if (sizeof(peerName) >= 15) {
+  const size_t nameLength = strlen(peerName);
+  if (!nameLength || nameLength >= sizeof(pipboyPeers[0].name)) {
     Serial.println("Peer name is too long");
     return;
   }
@@ -349,7 +341,6 @@ void radioRegisterOrUpdateClient(char* peerName, signed int rssi)
     if (peerIndex == PIPBOY_RADIO_UNKNOWN_PEER && !pipboyPeers[idx].isOnline) {
       peerIndex = idx;
       isExiting = false;
-      break;
     }
   }
 
@@ -360,7 +351,8 @@ void radioRegisterOrUpdateClient(char* peerName, signed int rssi)
 
   if (!isExiting) {
     strncpy(pipboyPeers[peerIndex].name, peerName, strlen(peerName));
-    pipboyPeers[peerIndex].nameLength = strlen(peerName);
+    pipboyPeers[peerIndex].name[nameLength] = '\0';
+    pipboyPeers[peerIndex].nameLength = nameLength;
   }
 
   pipboyPeers[peerIndex].rssi = rssi;
@@ -405,28 +397,11 @@ void radioUpdatePeerOnlineStatus(uint8_t peerIndex)
 
 radioMsg radioMessage(const char* cmd, char* to, char* body, bool isBroadcast)
 {
-  uint8_t len = strlen(PIPBOY_RADIO_HEADER) + strlen(settings.pipboyName) + (isBroadcast ? 1 : strlen(to)) + strlen(cmd) + strlen(body) + 4;
-
-  radioMsg sMsg = {"", len};
-
-  /**
-   * Message structure
-   * 1. Header
-   * 2. From
-   * 3. To (or empty if Broadcast)
-   * 4. Command
-   * 5. Message body
-   */
-
-  strcpy(sMsg.body, PIPBOY_RADIO_HEADER);
-  strcat(sMsg.body, PIPBOY_RADIO_DELIMETER);
-  strcat(sMsg.body, settings.pipboyName);
-  strcat(sMsg.body, PIPBOY_RADIO_DELIMETER);
-  strcat(sMsg.body, isBroadcast ? (char*)PIPBOY_RADIO_EMPTY : to);
-  strcat(sMsg.body, PIPBOY_RADIO_DELIMETER);
-  strcat(sMsg.body, cmd);
-  strcat(sMsg.body, PIPBOY_RADIO_DELIMETER);
-  strcat(sMsg.body, body);
+  radioMsg sMsg = {};
+  const int length = snprintf(sMsg.body, sizeof(sMsg.body), "%s\t%s\t%s\t%s\t%s",
+    PIPBOY_RADIO_HEADER, settings.pipboyName,
+    isBroadcast ? PIPBOY_RADIO_EMPTY : to, cmd, body);
+  if (length > 0 && static_cast<size_t>(length) < sizeof(sMsg.body)) sMsg.len = length;
 
   return sMsg;
 }
@@ -442,6 +417,7 @@ void radioPing()
 
 void radioSend(radioMsg msg)
 {
+  if (!msg.len) return;
   Serial.printf("Sending:[%s](%d)\n", msg.body, msg.len);
 
   if (quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, (uint8_t*)msg.body, msg.len)) {
@@ -451,6 +427,19 @@ void radioSend(radioMsg msg)
 
 void radioUpdate()
 {
+  ReceivedPacket packet;
+  while (receivedPackets && xQueueReceive(receivedPackets, &packet, 0) == pdTRUE) {
+    char* save = nullptr;
+    char* header = strtok_r(packet.body, PIPBOY_RADIO_DELIMETER, &save);
+    char* from = strtok_r(nullptr, PIPBOY_RADIO_DELIMETER, &save);
+    char* to = strtok_r(nullptr, PIPBOY_RADIO_DELIMETER, &save);
+    char* cmd = strtok_r(nullptr, PIPBOY_RADIO_DELIMETER, &save);
+    char* body = strtok_r(nullptr, PIPBOY_RADIO_DELIMETER, &save);
+    if (!header || !from || !to || !cmd || !body ||
+        strcmp(header, PIPBOY_RADIO_HEADER) || strlen(from) >= sizeof(radioPeer::name) ||
+        strlen(to) >= sizeof(radioPeer::name)) continue;
+    processRadioMessage(cmd, from, to, body, packet.rssi);
+  }
   radioPing();
 }
 
@@ -461,9 +450,9 @@ void radioSendEmote(const char* emoteCode)
   }
 
   radioMsg emoteMessage = radioMessage(
-    PIPBOY_RADIO_EMOTE, 
-    pipboyPeers[selectedPeerIdx].name, 
-    (char*) emoteCode, 
+    PIPBOY_RADIO_EMOTE,
+    pipboyPeers[selectedPeerIdx].name,
+    (char*) emoteCode,
     pipboyPeers[selectedPeerIdx].isBroadcast
   );
 
@@ -473,7 +462,7 @@ void radioSendEmote(const char* emoteCode)
   listMenuNum = 0;
 }
 
-void radioShowPreSelectedEmote(const char* emoteCode, char* txt)
+void radioShowPreSelectedEmote(const char* emoteCode, const char* txt)
 {
   displayTxt(txt, APP_RADIO_EMOTE_X, APP_RADIO_EMOTE_Y, APP_RADIO_EMOTE_W);
 
@@ -565,10 +554,4 @@ void appRadioEmotesFear()
     PIPBOY_RADIO_EMOTE_FEAR,
     "PIPBOY_RADIO_EMOTE_FEAR"
   );
-}
-
-
-void appPlayer()
-{
-  // @TODO try to use SD card with music
 }

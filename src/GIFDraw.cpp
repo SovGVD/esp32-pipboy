@@ -1,11 +1,13 @@
+#include "Pipboy.h"
 // Draw a line of image directly on the LCD
 void GIFDraw(GIFDRAW *pDraw)
 {
   uint8_t *s;
-  uint16_t *d, *usPalette, usTemp[320];
+  uint16_t *d, *usPalette, usTemp[480];
   int x, y, iWidth;
 
   iWidth = pDraw->iWidth;
+  iWidth = min(iWidth, static_cast<int>(sizeof(usTemp) / sizeof(usTemp[0])));
   if (iWidth + pDraw->iX > w)
   {
     iWidth = w - pDraw->iX;
@@ -56,7 +58,7 @@ void GIFDraw(GIFDRAW *pDraw)
       }           // while looking for opaque pixels
       if (iCount) // any opaque pixels?
       {
-        gfx->draw16bitBeRGBBitmap(pDraw->iX + x, y, usTemp, iCount, 1);
+        gfx->draw16bitBeRGBBitmap(pDraw->iX + x + VAULT_BOY_X, y + VAULT_BOY_Y, usTemp, iCount, 1);
         x += iCount;
         iCount = 0;
       }

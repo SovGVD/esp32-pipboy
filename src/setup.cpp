@@ -1,3 +1,4 @@
+#include "Pipboy.h"
 bool didWeJustEnteredToCharEdit = false;
 bool didWeJustSubmitOneCharEdit = false;
 bool preIsSubMenuEncoderControlList = false;
@@ -9,7 +10,7 @@ void setupMode()
   subMenuNum = 0;
   listMenuNum = 0;
   isSubMenuEncoderControlList = false;
-  
+
   setupLoop();
 
   Serial.println("Setup loop done... Restart");
@@ -48,6 +49,7 @@ void setupLoop() {
       currentTick++;
       resetSubMenuButton();
     }
+    delay(1);
   }
 }
 
@@ -61,7 +63,7 @@ void setupPipboyName()
   uint16_t hlPositionX = 0;
   uint16_t hlPositionY = 0;
 
-  subMenuItems = sizeof(settings.pipboyName);
+  subMenuItems = sizeof(settings.pipboyName) - 1; // keep the NUL terminator
 
   if (setupPipboyNameSubmit()) {
     return;

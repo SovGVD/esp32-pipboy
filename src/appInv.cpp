@@ -1,3 +1,4 @@
+#include "Pipboy.h"
 #define APP_INV_MENU_ITEMS 5
 bool isInvMenuReady = false;
 
@@ -13,6 +14,7 @@ menuItem appInvMenu[APP_INV_MENU_ITEMS] = {
 void setupInvMenu()
 {
   setupSubMenu(appInvMenu, APP_INV_MENU_ITEMS);
+  isInvMenuReady = true;
 }
 
 void appInv()
@@ -24,8 +26,8 @@ void appInv()
   subMenuItems = APP_INV_MENU_ITEMS;
 
   drawMenu(
-    appInvMenu, 
-    APP_INV_MENU_ITEMS, 
+    appInvMenu,
+    APP_INV_MENU_ITEMS,
     subMenuNum,
     COLOR_MAIN,
     COLOR_INACTIVE,

@@ -1,3 +1,4 @@
+#include "Pipboy.h"
 uint16_t hl_bottomLine;
 
 void setupMenu()
@@ -45,7 +46,7 @@ void drawMainMenuHighlights(uint16_t color)
 
   for (uint8_t i = 0; i < MENU_LINE_WIDTH; i++) {
     gfx->drawLine(
-      0, hl_bottomLine + i, 
+      0, hl_bottomLine + i,
       pos - MENU_HIGHLIGHT_LINE - MENU_HIGHLIGHT_PADDING, hl_bottomLine + i,
       color);
 
