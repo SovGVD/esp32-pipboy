@@ -1,5 +1,7 @@
 # Illustrated Fallout inventory
 
+[Project overview](../../README.md) · [Screens](../screens/README.md) · [Build and development](../development/README.md)
+
 INV contains 30 representative Fallout 4 items across the existing five categories.
 The selection follows Fallout 4 item categories; it is an illustrated reference
 inventory, with no equip, consume, quest or character-stat effects. Item text is

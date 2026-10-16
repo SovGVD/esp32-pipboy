@@ -1,4 +1,5 @@
 #include "Pipboy.h"
+#include <algorithm>
 int32_t currentMenuEncoderPosition = 0;
 int32_t previousMenuEncoderPosition = 0;
 int32_t currentSubMenuEncoderPosition = 0;
@@ -25,8 +26,15 @@ void encoderUpdate()
   currentSubMenuEncoderPosition = subMenuEncoder.getCount() / 2;
 
   updateMenuByEncoder();
-  updateSubMenuByEncoder();
-  updateListByEncoder();
+  dataGameVisibility();
+  if (dataGameCapturesInput()) {
+    // PCNT detents are absolute; games need the full delta, not just its sign.
+    const int64_t delta = static_cast<int64_t>(currentSubMenuEncoderPosition) - previousSubMenuEncoderPosition;
+    dataGameTurn(static_cast<int32_t>(std::max<int64_t>(-100,std::min<int64_t>(100,delta))));
+  } else {
+    updateSubMenuByEncoder();
+    updateListByEncoder();
+  }
 
   previousMenuEncoderPosition = currentMenuEncoderPosition;
   previousSubMenuEncoderPosition = currentSubMenuEncoderPosition;
@@ -34,6 +42,7 @@ void encoderUpdate()
 
 void onSubMenuClicked(EncoderButton& eb) {
   if (isDisplayMessageWindow) { isSubMenuButtonClicked = true; return; }
+  if (dataGameCapturesInput()) { dataGameClick(); return; }
   if (!isSubMenuEncoderControlList) {
     Serial.println("Set sub menu");
     isSubMenuEncoderControlList = true;
@@ -45,6 +54,8 @@ void onSubMenuClicked(EncoderButton& eb) {
 }
 
 void onSubMenuLongPress(EncoderButton& eb) {
+  if (isDisplayMessageWindow) { isSubMenuButtonLongPressed = true; return; }
+  if (dataGameCapturesInput()) { dataGameBack(); return; }
   Serial.println("Long click");
   isSubMenuEncoderControlList = false;
   isSubMenuButtonLongPressed = true;
