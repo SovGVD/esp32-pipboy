@@ -51,7 +51,8 @@ process-lifetime RTOS objects, as does the firmware.
 
 The same command also checks the inventory catalog, vector generation and
 native layout, arcade simulation, rendering and the DATA/encoder input
-handlers, plus the chat keyboard, text sanitizing, word wrap and rendering.
+handlers, plus the chat keyboard, text sanitizing, word wrap, rendering, touch calibration
+mapping and tap debouncing.
 See the [inventory](../inventory/README.md), [game](../games/README.md) and
 [chat](../communication/README.md) guides for coverage and preview commands.
 

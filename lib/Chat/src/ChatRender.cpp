@@ -90,6 +90,16 @@ void keyboard(Canvas& canvas, const View& view) {
 }
 }
 
+unsigned keyIndexAt(int x, int y) {
+    if (x < keysX || y < keysTop) return keyCount;
+    const int column = (x - keysX) / keyPitchX, row = (y - keysTop) / keyPitchY;
+    // Taps in the 2-pixel gaps count for the key to their left or above.
+    if (column >= static_cast<int>(keyColumns) || row > static_cast<int>(characterRows)) return keyCount;
+    if (row < static_cast<int>(characterRows)) return row * keyColumns + column;
+    const unsigned special = column < 2 ? 0 : column < 6 ? 1 : column < 8 ? 2 : 3;
+    return characterKeys + special;
+}
+
 void render(Canvas& canvas, const View& view) {
     header(canvas, view);
     history(canvas, view);

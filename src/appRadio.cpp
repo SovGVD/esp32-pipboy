@@ -129,8 +129,19 @@ void appChat()
 
 void appRadioChatWindow()
 {
+  bool isKeyPressed = false;
+  if (isTouchTapped && !isDisplayMessageWindow) {
+    const unsigned key = chat::keyIndexAt(touchX, touchY);
+    if (key < chat::keyCount) {
+      // A tap types immediately, even while the encoder is on subpage selection.
+      chatComposer.select(key);
+      isSubMenuEncoderControlList = true;
+      isKeyPressed = true;
+    }
+  }
+
   const bool isTyping = isSubMenuEncoderControlList && !isDisplayMessageWindow;
-  if (isTyping && isSubMenuButtonClicked) {
+  if (isTyping && (isSubMenuButtonClicked || isKeyPressed)) {
     char text[chat::maxText + 1];
     if (chatComposer.press(text)) {
       radioSendChat(text);
@@ -198,11 +209,28 @@ void appRadioPeerSelector()
     16
   );
 
-  if (isSubMenuButtonClicked && !isDisplayMessageWindow) {
-    isChatBroadcast = listMenuNum == 0;
-    strcpy(chatPeer, isChatBroadcast ? PIPBOY_RADIO_EMPTY : pipboyPeers[peerIndexes[listMenuNum]].name);
-    isChatOpen = true;
+  const int16_t tappedRow = appRadioPeerRowAt(touchX, touchY);
+  if (isTouchTapped && !isDisplayMessageWindow && tappedRow >= 0 && tappedRow < menuIdx) {
+    listMenuNum = tappedRow;
+    isSubMenuEncoderControlList = true;
+  } else if (!isSubMenuButtonClicked || isDisplayMessageWindow) {
+    return;
   }
+
+  isChatBroadcast = listMenuNum == 0;
+  strcpy(chatPeer, isChatBroadcast ? PIPBOY_RADIO_EMPTY : pipboyPeers[peerIndexes[listMenuNum]].name);
+  isChatOpen = true;
+}
+
+int16_t appRadioPeerRowAt(int16_t x, int16_t y)
+{
+  // Same row boxes as the highlight drawn by drawListMenu().
+  const int16_t top = APP_RADIO_PEERS_Y - CHAR_HEIGHT + 4;
+  if (x < 10 || x > 200 || y < top) {
+    return -1;
+  }
+
+  return (y - top) / CHAR_HEIGHT;
 }
 
 void appRadioNoSignal()

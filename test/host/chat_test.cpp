@@ -125,6 +125,19 @@ int main(int argc, char** argv) {
     assert(!chat::inConversation(history.at(1), "BOB", false) && chat::inConversation(history.at(1), "_", true));
     assert(!chat::inConversation(history.at(0), "_", true));
 
+    // Touch hits the key that is drawn there, including the wide bottom row.
+    for (unsigned key = 0; key < chat::characterKeys; ++key)
+        assert(chat::keyIndexAt(15 + (key % 10) * 45 + 21, 147 + (key / 10) * 23 + 10) == key);
+    assert(chat::keyIndexAt(15, 147) == 0 && chat::keyIndexAt(464, 146 + 4 * 23) == 39);
+    assert(chat::keyIndexAt(100, 245) == shiftKey && chat::keyIndexAt(200, 245) == spaceKey);
+    assert(chat::keyIndexAt(330, 245) == deleteKey && chat::keyIndexAt(440, 259) == sendKey);
+    assert(chat::keyIndexAt(14, 200) == chat::keyCount && chat::keyIndexAt(100, 146) == chat::keyCount);
+    assert(chat::keyIndexAt(466, 200) == chat::keyCount && chat::keyIndexAt(100, 263) == chat::keyCount);
+    assert(chat::keyIndexAt(-5, -5) == chat::keyCount);
+    chat::Composer tapped;
+    tapped.select(chat::keyIndexAt(200, 245)); assert(tapped.selection() == spaceKey);
+    tapped.select(chat::keyCount); assert(tapped.selection() == spaceKey);
+
     // Every screen state renders inside the native 480x272 frame.
     chat::History demo;
     demo.add("DOGMEAT", "Anyone near Diamond City? Need stimpaks.", false, false);
@@ -164,5 +177,5 @@ int main(int argc, char** argv) {
         const chat::View view = {&demo, &each, "DOGMEAT", false, true, true};
         chat::render(frame, view);
     }
-    std::cout << "Chat: sanitizing, word wrap, QWERTY keyboard, drafts, history and native bounds passed\n";
+    std::cout << "Chat: sanitizing, word wrap, QWERTY keyboard, drafts, history, touch hit testing and native bounds passed\n";
 }

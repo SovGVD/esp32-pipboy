@@ -64,6 +64,8 @@ extern bool isSubMenuEncoderControlList, isSubMenuButtonClicked, isSubMenuButton
 extern radioPeer pipboyPeers[PIPBOY_RADIO_MAX_PEERS];
 extern bool isDisplayMessageWindow, isInSetupMode;
 extern String displayMessageWindowHeader, displayMessageWindowBody;
+extern bool isTouchTapped;
+extern int16_t touchX, touchY;
 
 // Explicit declarations replace Arduino IDE generated prototypes.
 void setupAppRadioMenu();
@@ -73,6 +75,7 @@ void appRadioChatWindow();
 bool radioChatCapturesInput();
 void radioChatTurn(int32_t turn);
 void appRadioPeerSelector();
+int16_t appRadioPeerRowAt(int16_t x, int16_t y);
 void appRadioNoSignal();
 bool radioIsPeerOnline(const char* peerName);
 void setupRadio();
@@ -95,6 +98,8 @@ void setupMode();
 void setupLoop();
 void setupPipboyName();
 bool setupPipboyNameSubmit();
+void touchSetup();
+void touchUpdate();
 void encoderSetup();
 void buttonsUpdate();
 void encoderUpdate();

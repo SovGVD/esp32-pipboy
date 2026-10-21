@@ -10,6 +10,15 @@ constexpr int sdCs = 10;
 constexpr int sdSck = 12;
 constexpr int sdMiso = 13;
 constexpr int sdMosi = 11;
+// XPT2046 resistive touch shares the SD SPI bus (SCK/MISO/MOSI above).
+constexpr int touchCs = 38;
+constexpr int touchIrq = 3;
+// Starting calibration from the Dragonfruit JC4827W543 port, not a measurement
+// of an individual panel. "Touch raw=..." in the serial log helps adjust it.
+constexpr int touchRawXMin = 200, touchRawXMax = 3900;
+constexpr int touchRawYMin = 200, touchRawYMax = 3900;
+constexpr bool touchSwapXY = false, touchInvertX = true, touchInvertY = true;
+constexpr int touchPressureMin = 400; // raise to reject light/noisy contacts
 constexpr int audioBclk = 42;
 constexpr int audioLrclk = 2;
 constexpr int audioData = 41;

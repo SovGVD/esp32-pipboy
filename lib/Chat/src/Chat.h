@@ -49,7 +49,8 @@ Key keyAt(unsigned index);
 char characterAt(unsigned index, bool shift);
 
 // On-screen QWERTY keyboard and draft. The single encoder walks all keys in
-// reading order and wraps around, so SEND is one detent left of 'q's row start.
+// reading order and wraps around, so SEND is one detent left of '1'. Touch
+// selects a key directly.
 class Composer {
 public:
     Composer();
@@ -58,6 +59,7 @@ public:
     const char* draft() const { return draft_; }
     size_t length() const { return length_; }
     void turn(int detents);
+    void select(unsigned index) { if (index < keyCount) selection_ = index; }
     // Applies the selected key. Returns true when SEND had text to send: the
     // sanitized message is copied to out and the draft is cleared.
     bool press(char (&out)[maxText + 1]);
@@ -87,4 +89,6 @@ constexpr unsigned historyLines = 3;
 constexpr unsigned lineWidth = 45;
 // Draws the conversation, draft and keyboard below the RADIO submenu.
 void render(Canvas& canvas, const View& view);
+// Returns the key drawn at a screen point, or keyCount outside the keyboard.
+unsigned keyIndexAt(int x, int y);
 }

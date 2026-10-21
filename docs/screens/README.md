@@ -16,9 +16,9 @@ encoder to switch between STAT, INV, DATA, MAP and RADIO.
 
 Games use the secondary encoder for movement and click for start/pause/resume;
 hold returns to the game list. See the [game controls](../games/README.md#controls).
-In RADIO → CHAT, the secondary encoder moves through the on-screen keyboard
-and click presses a key; see the [chat controls](../communication/README.md#keyboard).
-Incoming messages open a message window; click or hold dismisses it. Games pause
+In RADIO → CHAT, tap a key on the resistive touchscreen, or turn the secondary
+encoder to move through the on-screen keyboard and click to press a key; see the [chat controls](../communication/README.md#keyboard).
+Incoming messages open a message window; tap, click or hold dismisses it. Games pause
 while that window is open and require a click to resume. Music keeps playing.
 
 ## Main tabs

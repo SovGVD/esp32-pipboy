@@ -25,6 +25,8 @@ radioPeer pipboyPeers[PIPBOY_RADIO_MAX_PEERS] = {};
 bool isDisplayMessageWindow = false;
 String displayMessageWindowHeader, displayMessageWindowBody;
 bool isInSetupMode = false;
+bool isTouchTapped = false;
+int16_t touchX = -1, touchY = -1;
 
 void setup()
 {
@@ -101,6 +103,7 @@ void setup()
   resetSubMenuButton();
   Serial.println("All DONE!");
   isSetup = false;
+  touchSetup();
   music::begin();
 
   // For debug
@@ -113,6 +116,7 @@ void loop(void)
   currentTime = micros();
 	if (currentTime - previousTime >= LOOP_TIME) {
     encoderUpdate();
+    touchUpdate();
     previousTime = currentTime;
     gfx->fillScreen(COLOR_SCREEN);
     radioUpdate();
@@ -292,7 +296,7 @@ void displayMessage()
   // Chat text arrives pre-wrapped to 34 columns, so only its new lines break it.
   displayTxt(displayMessageWindowBody, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT * 3, 36);
 
-  if (isSubMenuButtonClicked || isSubMenuButtonLongPressed) {
+  if (isSubMenuButtonClicked || isSubMenuButtonLongPressed || isTouchTapped) {
     isDisplayMessageWindow = false;
   }
 }

@@ -3,8 +3,9 @@
 [Project overview](../../README.md) · [Screens](../screens/README.md) · [Music](../music/README.md)
 
 RADIO → CHAT exchanges short text messages with nearby Pip-Boys using
-ESP-NOW. Messages are typed on an English (QWERTY) on-screen keyboard with the
-secondary encoder. A Wi-Fi router or internet connection is not required.
+ESP-NOW. Messages are typed on an English (QWERTY) on-screen keyboard, by
+tapping keys on the resistive touchscreen or with the secondary encoder. A
+Wi-Fi router or internet connection is not required.
 
 ![Chat screens](previews/contact-sheet.png)
 
@@ -14,9 +15,10 @@ secondary encoder. A Wi-Fi router or internet connection is not required.
    device names: discovery and recipient matching use those names.
 2. Turn the main encoder to RADIO and the secondary encoder to CHAT. If you
    are browsing MUSIC, hold the secondary button to return to subpage selection.
-3. Allow a few seconds for discovery. Click to browse the list, turn to choose
-   **ALL** (everyone nearby) or a peer, and click to open the conversation.
-4. Type with the keyboard (see below) and select **SEND** to send. The message
+3. Allow a few seconds for discovery. Tap **ALL** (everyone nearby) or a peer
+   to open the conversation, or click to browse the list, turn to choose and
+   click again.
+4. Type with the keyboard (see below) and press **SEND** to send. The message
    is added to the conversation and the draft is cleared.
 5. Hold the secondary button to return to the peer list; hold again to return
    to subpage selection. The draft is kept until it is sent or deleted.
@@ -28,7 +30,7 @@ offline; messages can still be sent but are only received if the peer is back
 in range.
 
 An incoming message for a conversation that is not on screen opens a message
-window with the sender's name and the text. Click or hold to dismiss it. A
+window with the sender's name and the text. Tap, click or hold to dismiss it. A
 running game pauses; click again to resume after dismissing the message.
 Background music continues.
 
@@ -40,6 +42,7 @@ receipt; the history is kept in RAM until reboot.
 
 | Control | Action |
 | --- | --- |
+| Tap a key | Press that key. It also becomes the encoder selection. |
 | Secondary encoder turn | Move the highlight through the keys in reading order. It wraps around, so **SEND** is one detent left of `1`. All detents between frames are used. |
 | Secondary encoder click | Press the highlighted key. |
 | Secondary button hold | Leave the conversation. |
@@ -100,6 +103,9 @@ on the UI thread. Excess packets can be dropped when the queue is full.
 - `src/appRadio.cpp` owns the history and draft, sends and receives packets
   and adapts drawing to Arduino_GFX. `src/encoders.cpp` routes keyboard turns
   before the normal submenu/list handlers, the same way as for games.
+- `src/touch.cpp` polls the XPT2046 once per frame and reports single taps;
+  `chat::keyIndexAt()` maps a tap to the key drawn there. Calibration and
+  wiring are described in the [hardware guide](../hardware/README.md#resistive-touch).
 - `./test/host/run.sh` covers the library. `python3 scripts/preview_chat.py
   --output docs/communication/previews` regenerates the screens above; they
   are software renders, not device captures.
@@ -108,6 +114,10 @@ on the UI thread. Excess packets can be dropped when the queue is full.
 
 - Confirm discovery in both directions, then send messages to a peer and to
   ALL, including shifted symbols, an 80-character message and DEL.
+- Type by tapping, including keys at the screen corners and the wide bottom
+  row; check that one tap types exactly one character. Adjust calibration if
+  taps land on a neighboring key.
+- Tap while music is playing from SD; playback must not stutter or stop.
 - Receive a message with the conversation open (no window) and closed
   (message window); dismiss it.
 - Move one device out of range or turn it off; confirm it leaves the peer list
@@ -118,4 +128,5 @@ on the UI thread. Excess packets can be dropped when the queue is full.
   appears as text.
 
 These checks require two physical devices. Host tests of the keyboard and
-rendering do not establish ESP-NOW delivery, radio range or encoder feel.
+rendering do not establish ESP-NOW delivery, radio range, touch accuracy or
+encoder feel.

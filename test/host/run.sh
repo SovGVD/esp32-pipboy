@@ -39,3 +39,7 @@ ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/arcade_controls_test"
     -fno-omit-frame-pointer -I include -I lib/Chat/src \
     test/host/chat_test.cpp lib/Chat/src/Chat.cpp lib/Chat/src/ChatRender.cpp -o "$build_dir/chat_test"
 ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/chat_test"
+"${CXX:-g++}" -std=c++11 -Wall -Wextra -Werror -g -fsanitize=address,undefined \
+    -fno-omit-frame-pointer -I lib/Touch/src \
+    test/host/touch_test.cpp lib/Touch/src/Touch.cpp -o "$build_dir/touch_test"
+ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/touch_test"
