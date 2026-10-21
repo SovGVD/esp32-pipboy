@@ -10,6 +10,8 @@
 #include "appRadioStructures.h"
 #include "Hardware.h"
 
+namespace chat { struct Message; }
+
 #define LOOP_TIME 33333UL
 #define VAULT_BOY_X 170
 #define VAULT_BOY_Y 60
@@ -83,6 +85,7 @@ void radioDataReceived(uint8_t* address, uint8_t* data, uint8_t len, signed int 
 bool radioIsPrintable(const char* text);
 bool radioIsForThisPipboy(char* to);
 void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int rssi);
+void processRadioMessageText(char* from, char* body, bool isBroadcast);
 void processRadioMessageChat(const char* from, const char* text, bool isBroadcast);
 void processRadioMessageEmote(char* from, char* emote, bool isBroadcast);
 void radioRegisterOrUpdateClient(char* peerName, signed int rssi);
@@ -93,6 +96,8 @@ void radioPing();
 void radioSend(radioMsg msg);
 void radioUpdate();
 void radioSendChat(const char* text);
+void radioSendChatMessage(const chat::Message& message);
+void radioRetryChat();
 void appPlayer();
 void setupMode();
 void setupLoop();

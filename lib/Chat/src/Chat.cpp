@@ -1,4 +1,5 @@
 #include "Chat.h"
+#include <cstdio>
 #include <cstring>
 
 namespace chat {
@@ -58,9 +59,41 @@ size_t wrap(const char* text, unsigned width, Line* lines, size_t maxLines) {
     return count;
 }
 
+size_t formatId(char* out, size_t outSize, uint16_t id) {
+    const int length = std::snprintf(out, outSize, "%04X", static_cast<unsigned>(id));
+    return length > 0 && static_cast<size_t>(length) < outSize ? static_cast<size_t>(length) : 0;
+}
+
+size_t formatBody(char* out, size_t outSize, uint16_t id, const char* text) {
+    const int length = std::snprintf(out, outSize, "%04X %s", static_cast<unsigned>(id), text ? text : "");
+    return length > 0 && static_cast<size_t>(length) < outSize ? static_cast<size_t>(length) : 0;
+}
+
+bool parseId(const char* body, uint16_t& id) {
+    if (!body) return false;
+    unsigned value = 0;
+    for (unsigned i = 0; i < 4; ++i) {
+        const char c = body[i];
+        const int digit = c >= '0' && c <= '9' ? c - '0' : c >= 'A' && c <= 'F' ? c - 'A' + 10 :
+            c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+        if (digit < 0) return false;
+        value = value * 16 + static_cast<unsigned>(digit);
+    }
+    if (body[4] != '\0' && body[4] != ' ') return false;
+    id = static_cast<uint16_t>(value);
+    return true;
+}
+
+bool parseBody(const char* body, uint16_t& id, const char*& text) {
+    if (!parseId(body, id) || body[4] != ' ') return false;
+    text = body + 5;
+    return true;
+}
+
 History::History() : messages_(), start_(0), size_(0) {}
 
-void History::add(const char* peer, const char* text, bool outgoing, bool broadcast) {
+Message& History::add(const char* peer, const char* text, bool outgoing, bool broadcast,
+                      uint16_t id, uint32_t nowMs) {
     Message& message = messages_[(start_ + size_) % historySize];
     if (size_ < historySize) ++size_;
     else start_ = (start_ + 1) % historySize;
@@ -68,6 +101,51 @@ void History::add(const char* peer, const char* text, bool outgoing, bool broadc
     sanitize(message.text, sizeof(message.text), text);
     message.outgoing = outgoing;
     message.broadcast = broadcast;
+    message.id = id;
+    message.delivery = outgoing && !broadcast ? Delivery::Pending : Delivery::None;
+    message.attempts = 1;
+    message.lastSentMs = nowMs;
+    return message;
+}
+
+bool History::acknowledge(const char* peer, uint16_t id) {
+    for (size_t i = 0; i < size_; ++i) {
+        Message& message = messages_[(start_ + i) % historySize];
+        if (message.outgoing && !message.broadcast && message.id == id && peer &&
+            std::strcmp(message.peer, peer) == 0 && message.delivery != Delivery::None) {
+            message.delivery = Delivery::Delivered;
+            return true;
+        }
+    }
+    return false;
+}
+
+Message* History::dueForRetry(uint32_t nowMs) {
+    for (size_t i = 0; i < size_; ++i) {
+        Message& message = messages_[(start_ + i) % historySize];
+        // Unsigned subtraction keeps working across the millis() wrap.
+        if (message.delivery != Delivery::Pending || nowMs - message.lastSentMs < retryIntervalMs) continue;
+        if (message.attempts >= sendAttempts) {
+            message.delivery = Delivery::Failed;
+            continue;
+        }
+        ++message.attempts;
+        message.lastSentMs = nowMs;
+        return &message;
+    }
+    return nullptr;
+}
+
+RecentIds::RecentIds() : peers_(), ids_(), next_(0), size_(0) {}
+
+bool RecentIds::seen(const char* peer, uint16_t id) {
+    for (size_t i = 0; i < size_; ++i)
+        if (ids_[i] == id && std::strcmp(peers_[i], peer ? peer : "") == 0) return true;
+    copyText(peers_[next_], sizeof(peers_[next_]), peer);
+    ids_[next_] = id;
+    next_ = (next_ + 1) % capacity;
+    if (size_ < capacity) ++size_;
+    return false;
 }
 
 const Message& History::at(size_t index) const {

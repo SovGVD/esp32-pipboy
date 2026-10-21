@@ -125,6 +125,51 @@ int main(int argc, char** argv) {
     assert(!chat::inConversation(history.at(1), "BOB", false) && chat::inConversation(history.at(1), "_", true));
     assert(!chat::inConversation(history.at(0), "_", true));
 
+    // Packet bodies carry a 4-digit hex id before the text.
+    char body[chat::maxText + 8];
+    assert(chat::formatBody(body, sizeof(body), 0xBEEF, "hi there") == 13 && !std::strcmp(body, "BEEF hi there"));
+    const std::string maxBody = std::string(chat::maxText, 'w');
+    assert(chat::formatBody(body, sizeof(body), 7, maxBody.c_str()) == chat::maxText + 5);
+    assert(chat::formatBody(body, 6, 7, "hi") == 0);
+    uint16_t id = 0;
+    const char* text = nullptr;
+    assert(chat::parseBody("00a1 hello", id, text) && id == 0xa1 && !std::strcmp(text, "hello"));
+    assert(chat::parseBody("FFFF ", id, text) && id == 0xffff && !*text);
+    assert(!chat::parseBody("FFFF", id, text) && !chat::parseBody("FFF hello", id, text));
+    assert(!chat::parseBody("FFFFhello", id, text) && !chat::parseBody("XYZW hi", id, text) && !chat::parseBody(nullptr, id, text));
+    assert(chat::formatId(body, sizeof(body), 0x12) == 4 && !std::strcmp(body, "0012"));
+    assert(chat::parseId("0012", id) && id == 0x12 && !chat::parseId("0012x", id) && !chat::parseId("12", id));
+    // A 126-byte frame fits the longest body with two 15-character names.
+    assert(std::strlen("PIPBOY\t") + 2 * 16 + std::strlen("M\t") + chat::maxText + 5 <= 126);
+
+    // Direct messages retry until acknowledged; broadcasts never wait.
+    chat::History delivery;
+    chat::Message& direct = delivery.add("BOB", "ping", true, false, 41, 1000);
+    assert(direct.delivery == chat::Delivery::Pending && direct.attempts == 1);
+    assert(delivery.add("_", "all", true, true, 42, 1000).delivery == chat::Delivery::None);
+    assert(delivery.add("BOB", "in", false, false, 41, 1000).delivery == chat::Delivery::None);
+    assert(!delivery.dueForRetry(1000 + chat::retryIntervalMs - 1));
+    assert(delivery.dueForRetry(1000 + chat::retryIntervalMs) == &direct && direct.attempts == 2);
+    assert(!delivery.dueForRetry(1000 + chat::retryIntervalMs));
+    assert(!delivery.acknowledge("ALICE", 41) && !delivery.acknowledge("BOB", 40));
+    assert(delivery.acknowledge("BOB", 41) && direct.delivery == chat::Delivery::Delivered);
+    assert(!delivery.dueForRetry(100000));
+    // Without an acknowledgement it fails after the last attempt's interval.
+    chat::Message& lost = delivery.add("BOB", "lost", true, false, 43, 0xFFFFFF00u); // across the millis() wrap
+    uint32_t now = 0xFFFFFF00u;
+    for (unsigned attempt = 2; attempt <= chat::sendAttempts; ++attempt) {
+        now += chat::retryIntervalMs;
+        assert(delivery.dueForRetry(now) == &lost && lost.attempts == attempt);
+    }
+    assert(!delivery.dueForRetry(now + chat::retryIntervalMs) && lost.delivery == chat::Delivery::Failed);
+    assert(delivery.acknowledge("BOB", 43) && lost.delivery == chat::Delivery::Delivered); // late ACK still counts
+
+    // Resent copies are recognized per sender.
+    chat::RecentIds recent;
+    assert(!recent.seen("BOB", 1) && recent.seen("BOB", 1) && !recent.seen("ALICE", 1));
+    for (uint16_t i = 100; i < 120; ++i) assert(!recent.seen("BOB", i));
+    assert(!recent.seen("BOB", 1)); // forgotten after 16 newer ids
+
     // Touch hits the key that is drawn there, including the wide bottom row.
     for (unsigned key = 0; key < chat::characterKeys; ++key)
         assert(chat::keyIndexAt(15 + (key % 10) * 45 + 21, 147 + (key / 10) * 23 + 10) == key);
@@ -141,8 +186,9 @@ int main(int argc, char** argv) {
     // Every screen state renders inside the native 480x272 frame.
     chat::History demo;
     demo.add("DOGMEAT", "Anyone near Diamond City? Need stimpaks.", false, false);
-    demo.add("DOGMEAT", "On my way, bringing purified water too", true, false);
+    demo.add("DOGMEAT", "On my way, bringing water", true, false, 1).delivery = chat::Delivery::Delivered;
     demo.add("DOGMEAT", "Great, meet at the gate", false, false);
+    demo.add("DOGMEAT", "OK", true, false, 2);
     demo.add("PIPBOY042", "Radstorm coming from the east, take cover!", false, true);
     chat::Composer typing;
     type(typing, "See you in 5 min", out, false);
@@ -156,7 +202,7 @@ int main(int argc, char** argv) {
     for (unsigned i = 0; i < 200; ++i) full.press(out);
     chat::History longest;
     longest.add("ABCDEFGHIJKLMNO", longText.c_str(), false, false);
-    longest.add("ABCDEFGHIJKLMNO", longText.c_str(), true, false);
+    longest.add("ABCDEFGHIJKLMNO", longText.c_str(), true, false).delivery = chat::Delivery::Failed;
     const Case cases[] = {
         {"chat-typing", &demo, &typing, "DOGMEAT", false, true, true},
         {"chat-shift", &demo, &shifted, "DOGMEAT", false, false, true},
@@ -177,5 +223,5 @@ int main(int argc, char** argv) {
         const chat::View view = {&demo, &each, "DOGMEAT", false, true, true};
         chat::render(frame, view);
     }
-    std::cout << "Chat: sanitizing, word wrap, QWERTY keyboard, drafts, history, touch hit testing and native bounds passed\n";
+    std::cout << "Chat: sanitizing, word wrap, QWERTY keyboard, drafts, packet bodies, delivery retries, duplicate ids, history, touch hit testing and native bounds passed\n";
 }

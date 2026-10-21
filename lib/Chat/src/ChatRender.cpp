@@ -27,14 +27,16 @@ void header(Canvas& canvas, const View& view) {
 
 void history(Canvas& canvas, const View& view) {
     struct Shown { const char* text; Line line; };
-    char formatted[historyLines][nameSize + 2 + maxText + 1];
+    char formatted[historyLines][nameSize + 2 + maxText + 16 + 1];
     Shown shown[historyLines];
     unsigned count = 0, used = 0;
     for (size_t i = view.history ? view.history->size() : 0; i-- > 0 && count < historyLines;) {
         const Message& message = view.history->at(i);
         if (!inConversation(message, view.peer, view.broadcast)) continue;
         char* text = formatted[used++];
-        std::snprintf(text, sizeof(formatted[0]), "%s: %s", message.outgoing ? "ME" : message.peer, message.text);
+        const char* tag = message.delivery == Delivery::Pending ? " (...)" :
+            message.delivery == Delivery::Failed ? " (NOT DELIVERED)" : "";
+        std::snprintf(text, sizeof(formatted[0]), "%s: %s%s", message.outgoing ? "ME" : message.peer, message.text, tag);
         Line lines[4];
         size_t total = wrap(text, lineWidth, lines, 4);
         if (total > 4) total = 4;

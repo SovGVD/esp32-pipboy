@@ -9,7 +9,8 @@
 const char* PIPBOY_RADIO_DELIMETER = "\t";  // tab
 const char* PIPBOY_RADIO_HEADER = "PIPBOY";
 const char* PIPBOY_RADIO_PING = "P";
-const char* PIPBOY_RADIO_MESSAGE = "M"; // Text chat message
+const char* PIPBOY_RADIO_MESSAGE = "M"; // Text chat message: "<4 hex id> <text>"
+const char* PIPBOY_RADIO_ACK = "A"; // Direct message received: "<4 hex id>"
 const char* PIPBOY_RADIO_EMOTE = "E"; // Emote, only received from older firmware
 
 const char* PIPBOY_RADIO_EMPTY = "_";
@@ -37,7 +38,7 @@ const radioLegacyEmote PIPBOY_RADIO_LEGACY_EMOTES[] = {
 
 uint8_t pipboyPeersCount = 0;
 unsigned long offlineAfter;
-const unsigned long pipboyPeerTTL = 150; // 150 ticks is about 5 second (1 tick per frame)
+const unsigned long pipboyPeerTTL = 300; // 300 ticks is about 10 seconds (1 tick per frame), survives two lost pings
 const unsigned long PIPBOY_RADIO_PING_TTL = 3000000; // microseconds (10^-6 seconds)
 
 unsigned long previousPingTime;
@@ -58,6 +59,8 @@ menuItem appRadioMenu[APP_RADIO_MENU_ITEMS] = {
 
 namespace {
 chat::History chatHistory;
+chat::RecentIds chatReceivedIds;
+uint16_t chatNextId = 0;
 chat::Composer chatComposer;
 bool isChatOpen = false;
 bool isChatBroadcast = false;
@@ -273,6 +276,8 @@ void setupRadio()
   Serial.printf ("MAC address: %s\n", WiFi.macAddress ().c_str ());
   quickEspNow.begin (1, 0, false);
   quickEspNow.onDataRcvd(radioDataReceived);
+  // A random start keeps ids fresh after a reboot, so peers do not drop them as duplicates.
+  chatNextId = random(0, 0x10000);
 }
 
 void radioDataReceived(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast)
@@ -323,7 +328,15 @@ void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int
   }
 
   if (strcmp(cmd, PIPBOY_RADIO_MESSAGE) == 0) {
-    processRadioMessageChat(from, body, strcmp(to, PIPBOY_RADIO_EMPTY) == 0);
+    processRadioMessageText(from, body, strcmp(to, PIPBOY_RADIO_EMPTY) == 0);
+    return;
+  }
+
+  if (strcmp(cmd, PIPBOY_RADIO_ACK) == 0) {
+    uint16_t id = 0;
+    if (chat::parseId(body, id)) {
+      chatHistory.acknowledge(from, id);
+    }
     return;
   }
 
@@ -333,6 +346,28 @@ void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int
   }
 }
 
+void processRadioMessageText(char* from, char* body, bool isBroadcast)
+{
+  uint16_t id = 0;
+  const char* text = nullptr;
+  if (!chat::parseBody(body, id, text)) {
+    return;
+  }
+
+  if (!isBroadcast) {
+    // Acknowledge every copy: a resend means our previous ACK was lost.
+    char ack[8];
+    chat::formatId(ack, sizeof(ack), id);
+    radioSend(radioMessage(PIPBOY_RADIO_ACK, from, ack, false));
+  }
+
+  if (chatReceivedIds.seen(from, id)) {
+    return;
+  }
+
+  processRadioMessageChat(from, text, isBroadcast);
+}
+
 void processRadioMessageChat(const char* from, const char* text, bool isBroadcast)
 {
   char cleanText[chat::maxText + 1];
@@ -340,8 +375,7 @@ void processRadioMessageChat(const char* from, const char* text, bool isBroadcas
     return;
   }
 
-  chatHistory.add(from, cleanText, false, isBroadcast);
-  const chat::Message& message = chatHistory.at(chatHistory.size() - 1);
+  const chat::Message& message = chatHistory.add(from, cleanText, false, isBroadcast);
 
   // No popup for the conversation that is already on screen.
   const bool isVisible = mainMenuNum == APP_RADIO_MAIN_MENU_ITEM && subMenuNum == APP_RADIO_CHAT_MENU_ITEM &&
@@ -500,18 +534,30 @@ void radioUpdate()
         strlen(to) >= sizeof(radioPeer::name) || !radioIsPrintable(from)) continue;
     processRadioMessage(cmd, from, to, body, packet.rssi);
   }
+  radioRetryChat();
   radioPing();
 }
 
 void radioSendChat(const char* text)
 {
-  radioMsg chatMessage = radioMessage(
-    PIPBOY_RADIO_MESSAGE,
-    chatPeer,
-    (char*) text,
-    isChatBroadcast
-  );
+  const chat::Message& message = chatHistory.add(chatPeer, text, true, isChatBroadcast, chatNextId++, millis());
+  radioSendChatMessage(message);
+}
 
-  radioSend(chatMessage);
-  chatHistory.add(chatPeer, text, true, isChatBroadcast);
+void radioSendChatMessage(const chat::Message& message)
+{
+  char body[chat::maxText + 8];
+  if (!chat::formatBody(body, sizeof(body), message.id, message.text)) {
+    return;
+  }
+
+  radioSend(radioMessage(PIPBOY_RADIO_MESSAGE, (char*)message.peer, body, message.broadcast));
+}
+
+void radioRetryChat()
+{
+  // Direct messages are resent until acknowledged or out of attempts.
+  while (chat::Message* message = chatHistory.dueForRetry(millis())) {
+    radioSendChatMessage(*message);
+  }
 }

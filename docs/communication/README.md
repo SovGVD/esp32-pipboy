@@ -34,9 +34,11 @@ window with the sender's name and the text. Tap, click or hold to dismiss it. A
 running game pauses; click again to resume after dismissing the message.
 Background music continues.
 
-**NO SIGNAL** means that no online peer is listed. Check that both devices
-run compatible firmware and use the same radio channel. There is no delivery
-receipt; the history is kept in RAM until reboot.
+Direct messages show `(...)` until the peer confirms them, and
+`(NOT DELIVERED)` if it never does (about 3 seconds). Messages to ALL are not
+confirmed. **NO SIGNAL** means that no online peer is listed. Check that both
+devices run compatible firmware and use the same radio channel. The history is
+kept in RAM until reboot.
 
 ## Keyboard
 
@@ -64,8 +66,8 @@ SPACE does nothing at the start of a draft or after another space.
 
 [src/appRadio.cpp](../../src/appRadio.cpp) initializes QuickESPNow on channel 1.
 Devices broadcast a discovery ping roughly every three seconds. Up to four
-peers are tracked, with entries expiring after 150 UI ticks (about five seconds
-at 30 frames per second). Names fit in 15 characters and are stored in EEPROM.
+peers are tracked, with entries expiring after 300 UI ticks (about ten seconds
+at 30 frames per second), so one or two lost pings do not drop a peer. Names fit in 15 characters and are stored in EEPROM.
 
 Packets have five tab-separated fields:
 
@@ -74,15 +76,24 @@ PIPBOY<TAB>sender<TAB>recipient<TAB>command<TAB>body
 ```
 
 `<TAB>` represents a literal tab byte. Discovery uses recipient `_`, command
-`P` and body `_`. A chat message uses command `M` and the text as its body; the
-recipient is the selected peer's name, or `_` for ALL. Frames are broadcast at
+`P` and body `_`. A chat message uses command `M`; the recipient is the
+selected peer's name, or `_` for ALL. Its body is the sender's 16-bit message
+id as four hex digits, a space and the text, for example `01AF Hello`. Ids
+start at a random value on boot and increase per message.
+
+ESP-NOW broadcast frames get no link-level acknowledgement or retry, so a
+direct message is confirmed at the application level. The recipient answers
+every copy with command `A` and the four-digit id as the body, addressed to
+the sender. The sender resends the same id every 700 ms, up to four sends in
+total, until the `A` arrives. The recipient remembers the last 16
+(sender, id) pairs and acknowledges but does not show resent copies again. Frames are broadcast at
 the ESP-NOW transport level; the receiver filters messages by recipient name,
 with `_` accepted as broadcast. This implementation has no authentication or
 encryption.
 
 Outgoing and incoming text is sanitized to printable ASCII without tabs,
 with repeated spaces collapsed and both ends trimmed. 80 characters plus two
-15-character names fit in a single packet. Packets whose sender name is not
+15-character names fit in a single 126-byte packet. Packets whose sender name is not
 printable ASCII are dropped.
 
 Older firmware sent emotes with command `E` and a code such as `wave`. These

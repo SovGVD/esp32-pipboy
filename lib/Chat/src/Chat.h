@@ -14,11 +14,30 @@ constexpr unsigned keyCount = characterKeys + 4;
 constexpr unsigned firstKey = keyColumns; // 'q'
 enum class Key : uint8_t { Character, Shift, Space, Delete, Send };
 
+// Direct outgoing messages wait for an acknowledgement and are resent until
+// it arrives; incoming and broadcast messages have no delivery state.
+enum class Delivery : uint8_t { None, Pending, Delivered, Failed };
+constexpr uint8_t sendAttempts = 4;
+constexpr uint32_t retryIntervalMs = 700;
+
 struct Message {
     char peer[nameSize]; // sender of incoming, recipient of outgoing messages
     char text[maxText + 1];
     bool outgoing, broadcast;
+    uint16_t id;
+    Delivery delivery;
+    uint8_t attempts;
+    uint32_t lastSentMs;
 };
+
+// Message packet body: four hex digits of the sender's message id, a space and
+// the text. Returns the body length, or 0 if it does not fit.
+size_t formatBody(char* out, size_t outSize, uint16_t id, const char* text);
+// Splits a received body; text points into body. False for a malformed body.
+bool parseBody(const char* body, uint16_t& id, const char*& text);
+// Acknowledgement body: just the four hex digits of the id.
+size_t formatId(char* out, size_t outSize, uint16_t id);
+bool parseId(const char* body, uint16_t& id);
 
 // Copies printable ASCII only. Tabs/control bytes become spaces, other bytes
 // become '?', runs of spaces collapse, both ends are trimmed and the result is
@@ -34,14 +53,35 @@ size_t wrap(const char* text, unsigned width, Line* lines, size_t maxLines);
 class History {
 public:
     History();
-    void add(const char* peer, const char* text, bool outgoing, bool broadcast);
+    // Returns the stored message; a direct outgoing one starts Pending, as sent once at nowMs.
+    Message& add(const char* peer, const char* text, bool outgoing, bool broadcast,
+                 uint16_t id = 0, uint32_t nowMs = 0);
     size_t size() const { return size_; }
     const Message& at(size_t index) const; // 0 is the oldest kept message
     void clear() { start_ = size_ = 0; }
+    // Marks the pending message to peer with this id as delivered.
+    bool acknowledge(const char* peer, uint16_t id);
+    // Returns a pending message whose retry is due and counts the attempt, or
+    // nullptr. Messages out of attempts become Failed after one more interval.
+    Message* dueForRetry(uint32_t nowMs);
 private:
     Message messages_[historySize];
     size_t start_, size_;
 };
+// Remembers recently received (sender, id) pairs so resent messages whose
+// acknowledgement was lost are shown only once.
+class RecentIds {
+public:
+    RecentIds();
+    // True if the pair was already seen; otherwise records it.
+    bool seen(const char* peer, uint16_t id);
+private:
+    static constexpr size_t capacity = 16;
+    char peers_[capacity][nameSize];
+    uint16_t ids_[capacity];
+    size_t next_, size_;
+};
+
 // Broadcast messages make up the ALL conversation; others match the peer name.
 bool inConversation(const Message& message, const char* peer, bool broadcast);
 
