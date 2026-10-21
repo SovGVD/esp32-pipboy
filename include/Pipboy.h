@@ -10,6 +10,8 @@
 #include "appRadioStructures.h"
 #include "Hardware.h"
 
+namespace chat { struct Message; }
+
 #define LOOP_TIME 33333UL
 #define VAULT_BOY_X 170
 #define VAULT_BOY_Y 60
@@ -64,20 +66,27 @@ extern bool isSubMenuEncoderControlList, isSubMenuButtonClicked, isSubMenuButton
 extern radioPeer pipboyPeers[PIPBOY_RADIO_MAX_PEERS];
 extern bool isDisplayMessageWindow, isInSetupMode;
 extern String displayMessageWindowHeader, displayMessageWindowBody;
+extern bool isTouchTapped, isTouchDown;
+extern int16_t touchX, touchY, touchDownX, touchDownY;
 
 // Explicit declarations replace Arduino IDE generated prototypes.
 void setupAppRadioMenu();
 void appRadio();
-void appEmotes();
-void appRadioEmoteSelector();
+void appChat();
+void appRadioChatWindow();
+bool radioChatCapturesInput();
+void radioChatTurn(int32_t turn);
 void appRadioPeerSelector();
 void appRadioNoSignal();
-void appRadioPeerItem();
+bool radioIsPeerOnline(const char* peerName);
 void setupRadio();
 void radioDataReceived(uint8_t* address, uint8_t* data, uint8_t len, signed int rssi, bool broadcast);
+bool radioIsPrintable(const char* text);
 bool radioIsForThisPipboy(char* to);
 void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int rssi);
-void processRadioMessageEmote(char* from, char* emote);
+void processRadioMessageText(char* from, char* body, bool isBroadcast);
+void processRadioMessageChat(const char* from, const char* text, bool isBroadcast);
+void processRadioMessageEmote(char* from, char* emote, bool isBroadcast);
 void radioRegisterOrUpdateClient(char* peerName, signed int rssi);
 void radioUpdatePipboyPeersCount();
 void radioUpdatePeerOnlineStatus(uint8_t peerIndex);
@@ -85,25 +94,35 @@ radioMsg radioMessage(const char* cmd, char* to, char* body, bool isBroadcast);
 void radioPing();
 void radioSend(radioMsg msg);
 void radioUpdate();
-void radioSendEmote(const char* emoteCode);
-void radioShowPreSelectedEmote(const char* emoteCode, const char* txt);
-void appRadioEmotesConfused();
-void appRadioEmotesFingerGuns();
-void appRadioEmotesFollow();
-void appRadioEmotesFrown();
-void appRadioEmotesHeart();
-void appRadioEmotesJoinMyTeam();
-void appRadioEmotesRadiated();
-void appRadioEmotesStartled();
-void appRadioEmotesThumbsDown();
-void appRadioEmotesThumbsUp();
-void appRadioEmotesWave();
-void appRadioEmotesFear();
+void radioSendChat(const char* text);
+void radioSendChatMessage(const chat::Message& message);
+void radioRetryChat();
 void appPlayer();
 void setupMode();
 void setupLoop();
+void setupShowMenu(uint8_t selectedItem);
+void setupMenuPage();
+void setupMenuChangeName();
+void setupMenuCalibrateTouch();
+void setupMenuExit();
 void setupPipboyName();
+void setupSetNameChar(uint8_t position, char symbol);
+void setupDrawNamePalette();
+bool setupPipboyNameTouch();
 bool setupPipboyNameSubmit();
+void touchSetup();
+bool touchIsHeld();
+void bootButtonUpdate();
+bool bootButtonClicked();
+bool bootButtonHeld();
+void touchRegisterSubMenu(menuItem* menu, uint8_t menuItemsNum, int16_t menuXdelta);
+void touchRegisterList(int16_t x, int16_t top, int16_t width, int16_t rowHeight, uint16_t first, uint16_t rows);
+bool touchListTap();
+void touchClearRegions();
+void touchDispatch();
+bool touchHasSavedCalibration();
+void touchCalibrate(bool isFirstBoot);
+void touchUpdate();
 void encoderSetup();
 void buttonsUpdate();
 void encoderUpdate();
@@ -144,6 +163,7 @@ void dataGameTurn(int32_t turn);
 void dataGameClick();
 void dataGameBack();
 void dataGameVisibility();
+void dataGameTouch();
 void appMap();
 void settingsLoad();
 void settingsCheck();
@@ -158,7 +178,7 @@ void drawMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItemNum,
 void updateMenuGeometry(menuItem* menu, uint8_t menuItemsNum, uint16_t menuPadding, itemGeometry givenMenuGeometry);
 void drawListMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItemNum, uint16_t color, uint16_t colorBackground, uint16_t menuX, uint16_t menuY, uint8_t menuMaxChars);
 void displayTxt(String txt, uint16_t x, uint16_t y, uint16_t wMaxChars);
-void setDisplayMessage(const char* from, const char* txt);
+void setDisplayMessage(const char* header, const char* from, const char* txt);
 void displayMessage();
 void GIFDraw(GIFDRAW *pDraw);
 void setupMenu();

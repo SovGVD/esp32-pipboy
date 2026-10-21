@@ -21,7 +21,10 @@ DATA → GAMES has two small original games with monochrome vector/pixel art:
 4. Hold the secondary button to return to the game list. Reopening the same
    game preserves its board, score and lives; click to resume if it was playing.
    Hold again from the game list to return to category navigation.
-5. The main encoder always controls the top-level tabs. Leaving DATA pauses the
+5. Touch works too: tap a game twice to open it; hold a finger on the bottom
+   row (paddle/ship) and it moves toward the finger; tap anywhere above that
+   row to launch, pause or resume; tap GAMES to return to the list.
+6. The main encoder always controls the top-level tabs. Leaving DATA pauses the
    open game. On return, click to resume; time spent elsewhere is not simulated.
 
 ESP-NOW message windows pause games and receive the dismiss click/hold without

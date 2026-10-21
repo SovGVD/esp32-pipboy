@@ -9,18 +9,27 @@ constexpr uint16_t dim = 0x2201;
 constexpr uint16_t black = 0;
 constexpr size_t categoryCount = 5;
 
-struct Command {
-    bool triangle;
-    uint8_t paint; // 0 black, 1 phosphor green
-    int16_t coordinates[6];
+// Low-poly solid model generated from assets/inventory/models.py. Faces are
+// only referenced by index: their normals (x, y, z per face, scaled to 127),
+// their triangles (face, a, b, c) and their edges (a, b, faceA, faceB, hard).
+struct Mesh {
+    const int16_t* vertices; // x, y, z per vertex, within +-1000
+    uint16_t vertexCount;
+    const int8_t* normals;
+    const uint16_t* triangles;
+    uint16_t triangleCount;
+    const uint16_t* edges;
+    uint16_t edgeCount;
+    // Largest half width/height seen during a full turn at viewPitch, so the
+    // model keeps one size while it rotates.
+    int16_t halfWidth, halfHeight;
 };
-struct Model { const Command* commands; uint16_t count; };
 struct Item {
     const char* id;
     const char* name;
     const char* kind;
     const char* description;
-    Model model;
+    Mesh model;
 };
 struct Category { const char* name; const Item* items; uint16_t count; };
 
@@ -37,6 +46,15 @@ public:
 
 const Category* category(size_t index);
 uint16_t clampSelection(const Category& category, uint16_t selection);
-void drawModel(Canvas& canvas, const Model& model, int x, int y, int width, int height);
-void render(Canvas& canvas, size_t categoryIndex, uint16_t selection, bool browsing);
+constexpr float viewPitch = 0.35f;        // radians the camera looks down; matches inventory_mesh.py
+constexpr float turnRadiansPerMs = 0.0008f; // about 46 degrees per second
+constexpr int maxModelWidth = 240, maxModelHeight = 100;
+// Draws the model turned by yaw radians as a hidden-line wireframe: only
+// silhouettes and sharp edges, and only where no nearer surface covers them.
+void drawModel(Canvas& canvas, const Mesh& model, int x, int y, int width, int height, float yaw);
+void render(Canvas& canvas, size_t categoryIndex, uint16_t selection, bool browsing, uint32_t timeMs = 0);
+// Item list rows as render() draws them, for touch: rows of 26 px from y 67, x 8..211.
+constexpr unsigned visibleRows = 6;
+constexpr int listTop = 67, listRowHeight = 26, listX = 8, listWidth = 204;
+unsigned firstVisible(const Category& category, uint16_t selection);
 }

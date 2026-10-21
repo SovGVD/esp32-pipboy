@@ -50,9 +50,11 @@ set `ASAN_OPTIONS=detect_leaks=1` if your host supports it. The service test use
 process-lifetime RTOS objects, as does the firmware.
 
 The same command also checks the inventory catalog, vector generation and
-native layout, plus arcade simulation, rendering and the DATA/encoder input
-handlers. See the [inventory guide](../inventory/README.md) and
-[game guide](../games/README.md) for coverage and preview commands.
+native layout, arcade simulation, rendering and the DATA/encoder input
+handlers, plus the chat keyboard, text sanitizing, word wrap, rendering, touch calibration
+mapping, 4-point calibration and tap debouncing.
+See the [inventory](../inventory/README.md), [game](../games/README.md) and
+[chat](../communication/README.md) guides for coverage and preview commands.
 
 Host checks and builds do not establish audible playback, physical display
 behavior or control feel. Follow the device checklists in the

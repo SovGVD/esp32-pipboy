@@ -25,6 +25,50 @@ radioPeer pipboyPeers[PIPBOY_RADIO_MAX_PEERS] = {};
 bool isDisplayMessageWindow = false;
 String displayMessageWindowHeader, displayMessageWindowBody;
 bool isInSetupMode = false;
+bool isTouchTapped = false, isTouchDown = false;
+int16_t touchX = -1, touchY = -1, touchDownX = -1, touchDownY = -1;
+
+namespace {
+bool isBootButtonDown = false, isBootButtonHoldReported = false, isBootButtonClickPending = false;
+bool isBootButtonHoldPending = false;
+unsigned long bootButtonDownAt = 0;
+}
+
+/**
+ * BOOT works without the dials: a short press reports a click, holding it
+ * for bootButtonHoldMs reports a hold (once per press).
+ */
+void bootButtonUpdate()
+{
+  const bool isDown = digitalRead(hardware::bootButton) == LOW;
+  const unsigned long now = millis();
+  if (isDown && !isBootButtonDown) {
+    bootButtonDownAt = now;
+    isBootButtonHoldReported = false;
+  }
+  if (isDown && !isBootButtonHoldReported && now - bootButtonDownAt >= hardware::bootButtonHoldMs) {
+    isBootButtonHoldReported = true;
+    isBootButtonHoldPending = true;
+  }
+  if (!isDown && isBootButtonDown && !isBootButtonHoldReported) {
+    isBootButtonClickPending = true;
+  }
+  isBootButtonDown = isDown;
+}
+
+bool bootButtonClicked()
+{
+  const bool isClicked = isBootButtonClickPending;
+  isBootButtonClickPending = false;
+  return isClicked;
+}
+
+bool bootButtonHeld()
+{
+  const bool isHeld = isBootButtonHoldPending;
+  isBootButtonHoldPending = false;
+  return isHeld;
+}
 
 void setup()
 {
@@ -32,6 +76,7 @@ void setup()
   Serial.println("Pipboy OS-ish loading start");
 
   encoderSetup();
+  pinMode(hardware::bootButton, INPUT_PULLUP);
   Serial.println("Encoders... DONE");
 
   buttonsUpdate();
@@ -72,6 +117,9 @@ void setup()
   settingsLoad();
   Serial.println("Settings... DONE");
 
+  // Before setup mode and before the music task mounts SD on the shared bus.
+  touchSetup();
+
   menuItems[0] = menuItem{"STAT",  4, {0, 0, 0, 0}, appStat};
   menuItems[1] = menuItem{"INV",   3, {0, 0, 0, 0}, appInv};
   menuItems[2] = menuItem{"DATA",  4, {0, 0, 0, 0}, appData};
@@ -80,9 +128,15 @@ void setup()
 
   Serial.printf("User: %s\n", settings.pipboyName);
 
-  if (isSubMenuButtonLongPressed) {
+  // Setup without the dials: a finger held on the screen while booting.
+  if (isSubMenuButtonLongPressed || touchIsHeld()) {
     setupMode();
     return;
+  }
+
+  if (!touchHasSavedCalibration()) {
+    // First start: calibrate once; skipping keeps the defaults.
+    touchCalibrate(true);
   }
 
   stat_hp = random(30, 99);
@@ -104,15 +158,21 @@ void setup()
   music::begin();
 
   // For debug
-  // setDisplayMessage("from", "message is 123");
+  // setDisplayMessage("Incoming message", "from", "message is 123");
 }
 
 void loop(void)
 {
   buttonsUpdate();
+  bootButtonUpdate();
+  if (bootButtonHeld()) {
+    setupMode(); // restarts when done
+  }
   currentTime = micros();
 	if (currentTime - previousTime >= LOOP_TIME) {
     encoderUpdate();
+    touchUpdate();
+    touchDispatch();
     previousTime = currentTime;
     gfx->fillScreen(COLOR_SCREEN);
     radioUpdate();
@@ -149,6 +209,10 @@ void setUiFont() {
 
 void drawMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItemNum, uint16_t color, uint16_t colorInactive, uint16_t menuXdelta)
 {
+  if (menu != menuItems) {
+    touchRegisterSubMenu(menu, menuItemsNum, menuXdelta);
+  }
+
   for(uint8_t i = 0; i < menuItemsNum; i++) {
     if (i == selectedMenuItemNum) {
       gfx->setTextColor(color);
@@ -196,6 +260,8 @@ void drawListMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItem
       endAt = MAX_LIST_MENU_ITEMS - 1;
     }
   }
+
+  touchRegisterList(menuX - 2, menuY - CHAR_HEIGHT + 4, menuMaxChars * CHAR_WIDTH + 5, CHAR_HEIGHT, startFrom, endAt - startFrom + 1);
 
   for(uint16_t i = startFrom; i <= endAt; i++) {
     if (i == selectedMenuItemNum) {
@@ -246,9 +312,9 @@ void displayTxt(String txt, uint16_t x, uint16_t y, uint16_t wMaxChars)
   }
 }
 
-void setDisplayMessage(const char* from, const char* txt)
+void setDisplayMessage(const char* header, const char* from, const char* txt)
 {
-  displayMessageWindowHeader = "You receive emote";
+  displayMessageWindowHeader = header;
   displayMessageWindowBody = "From: " + (String)from + "\n" + (String)txt;
 
   isDisplayMessageWindow = true;
@@ -289,9 +355,10 @@ void displayMessage()
   );
 
   displayTxt(displayMessageWindowHeader, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT, 20);
-  displayTxt(displayMessageWindowBody, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT * 3, 20);
+  // Chat text arrives pre-wrapped to 34 columns, so only its new lines break it.
+  displayTxt(displayMessageWindowBody, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT * 3, 36);
 
-  if (isSubMenuButtonClicked || isSubMenuButtonLongPressed) {
+  if (isSubMenuButtonClicked || isSubMenuButtonLongPressed || isTouchTapped) {
     isDisplayMessageWindow = false;
   }
 }

@@ -1,112 +1,29 @@
 #!/usr/bin/env python3
-"""Compile editable inventory SVGs/catalog into allocation-free C++ commands.
+"""Compile the inventory catalog and 3D models into allocation-free C++ data.
 
-Supported SVG subset: line, polyline, polygon, rect, circle and ellipse; solid
-black/green fills and 2px green strokes. Paths, transforms, external references
-and unsupported attributes are rejected instead of silently disappearing.
+Text comes from assets/inventory/catalog.json, models from
+assets/inventory/models.py (built with scripts/inventory_mesh.py). The output
+holds each model's vertices, face normals, triangles and edges.
 """
 import argparse
 import json
-import math
 from pathlib import Path
 import re
+import sys
 import textwrap
-import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'assets/inventory'
 DESTINATION = ROOT / 'lib/Inventory/src/InventoryData.h'
-PALETTE = {'#000': 0, '#42b610': 1}
+sys.path.insert(0, str(SOURCE))
+from inventory_mesh import compile_mesh  # noqa: E402
+from models import MODELS  # noqa: E402
 
 
-def cross(a, b, c):
-    return (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
-
-
-def triangulate(points):
-    # Ear clipping supports the concave outlines used by guns and clothing.
-    points = list(points)
-    area = sum(a[0]*b[1]-b[0]*a[1] for a, b in zip(points, points[1:]+points[:1]))
-    assert area != 0, 'Zero-area polygon'
-    for i, a in enumerate(points):
-        b = points[(i+1) % len(points)]
-        for j in range(i+1, len(points)):
-            c, d = points[j], points[(j+1) % len(points)]
-            assert not (cross(a, b, c)*cross(a, b, d) < 0 and
-                        cross(c, d, a)*cross(c, d, b) < 0), 'Self-intersecting polygon'
-    if area < 0:
-        points.reverse()
-    result = []
-    while len(points) > 3:
-        for i, b in enumerate(points):
-            a, c = points[i-1], points[(i+1) % len(points)]
-            if cross(a, b, c) <= 0:
-                continue
-            adjacent = {(i-1) % len(points), i, (i+1) % len(points)}
-            others = [p for j, p in enumerate(points) if j not in adjacent]
-            if any(cross(a, b, p) >= 0 and cross(b, c, p) >= 0 and cross(c, a, p) >= 0 for p in others):
-                continue
-            result.append((a, b, c))
-            del points[i]
-            break
-        else:
-            raise ValueError('Non-simple or degenerate polygon')
-    if len(points) == 3 and cross(*points):
-        result.append(tuple(points))
-    return result
-
-
-def compile_svg(path):
-    svg = ET.parse(path).getroot()
-    assert svg.attrib['viewBox'] == '0 0 200 120', path
-    assert set(svg.attrib) <= {'viewBox', 'width', 'height', 'role', 'style'}, path
-    assert svg.attrib.get('style', '') in ('', 'background:#000'), path
-    commands = []
-    for element in svg:
-        tag = element.tag.split('}')[-1]
-        if tag == 'title':
-            continue
-        attributes = dict(element.attrib)
-        fill = attributes.pop('fill', 'none')
-        stroke = attributes.pop('stroke', 'none')
-        width = float(attributes.pop('stroke-width', '2'))
-        assert width == 2, path
-        assert fill == 'none' or fill in PALETTE, path
-        assert stroke in ('none', '#42b610'), path
-        if tag in ('polygon', 'polyline'):
-            values = [float(n) for n in re.split('[ ,]+', attributes.pop('points').strip())]
-            assert len(values) % 2 == 0 and len(values) >= 4, path
-            points = list(zip(values[::2], values[1::2]))
-        elif tag == 'line':
-            points = [(float(attributes.pop('x1')), float(attributes.pop('y1'))),
-                      (float(attributes.pop('x2')), float(attributes.pop('y2')))]
-        elif tag == 'rect':
-            x, y, w, h = [float(attributes.pop(key)) for key in ('x', 'y', 'width', 'height')]
-            assert w > 0 and h > 0, path
-            points = [(x, y), (x+w, y), (x+w, y+h), (x, y+h)]
-        elif tag in ('circle', 'ellipse'):
-            x, y = float(attributes.pop('cx')), float(attributes.pop('cy'))
-            if tag == 'circle':
-                rx = ry = float(attributes.pop('r'))
-            else:
-                rx, ry = float(attributes.pop('rx')), float(attributes.pop('ry'))
-            assert rx > 0 and ry > 0, path
-            points = [(x+rx*math.cos(i*math.tau/32), y+ry*math.sin(i*math.tau/32)) for i in range(32)]
-        else:
-            raise ValueError(f'{path}: unsupported SVG element {tag}')
-        assert not attributes, (path, attributes)
-        assert all(math.isfinite(x) and math.isfinite(y) and 0 <= x <= 200 and 0 <= y <= 120 for x, y in points), path
-        if fill != 'none':
-            assert tag not in ('line', 'polyline'), path
-            for triangle in triangulate(points):
-                commands.append((True, PALETTE[fill], [round(v) for point in triangle for v in point]))
-        if stroke != 'none':
-            edges = zip(points, points[1:]+(points[:1] if tag not in ('line', 'polyline') else []))
-            for a, b in edges:
-                coordinates = [round(v) for point in (a, b) for v in point] + [0, 0]
-                commands.append((False, 1, coordinates))
-    assert commands and any(not triangle and paint for triangle, paint, _ in commands), path
-    return commands
+def numbers(values, per_line=24):
+    values = list(values)
+    return '\n'.join('    ' + ', '.join(map(str, values[i:i+per_line])) + ','
+                     for i in range(0, len(values), per_line))
 
 
 def generate():
@@ -115,7 +32,7 @@ def generate():
     assert [c['label'] for c in catalog['categories']] == ['WEAPONS', 'APPAREL', 'AID', 'MISC', 'JUNK']
     output = ['// Generated by scripts/build_inventory.py. Edit assets/inventory instead.',
               '#pragma once', '', 'namespace inventory {', 'namespace {']
-    ids, files = set(), set()
+    ids = set()
     total = 0
     for category in catalog['categories']:
         assert re.fullmatch('[a-z]+', category['id'])
@@ -129,23 +46,31 @@ def generate():
             assert len(textwrap.wrap(item['description'], 23, break_long_words=True, break_on_hyphens=False)) <= 3, (id, item['description'])
             assert all(32 <= ord(c) <= 126 for key in ('name', 'kind', 'description') for c in item[key]), id
             assert item['source'].startswith('https://fallout.fandom.com/wiki/'), id
-            path = (SOURCE/item['model']).resolve()
-            assert path.parent == (SOURCE/'svg').resolve(), path
-            files.add(path)
-            commands = compile_svg(path)
-            total += len(commands)
+            assert id in MODELS, f'No 3D model for {id}'
+            mesh = compile_mesh(MODELS[id]())
+            total += len(mesh['triangles'])
             symbol = id.replace('-', '_')
-            output.append(f'constexpr Command model_{symbol}[] = {{')
-            for triangle, paint, coordinates in commands:
-                output.append('    {' + str(triangle).lower() + ', ' + str(paint) + ', {' + ', '.join(map(str, coordinates)) + '}},')
+            output.append(f'constexpr int16_t vertices_{symbol}[] = {{')
+            output.append(numbers(c for v in mesh['vertices'] for c in v))
             output.append('};')
+            output.append(f'constexpr int8_t normals_{symbol}[] = {{')
+            output.append(numbers(c for n in mesh['normals'] for c in n))
+            output.append('};')
+            output.append(f'constexpr uint16_t triangles_{symbol}[] = {{')
+            output.append(numbers(c for t in mesh['triangles'] for c in t))
+            output.append('};')
+            output.append(f'constexpr uint16_t edges_{symbol}[] = {{')
+            output.append(numbers(c for e in mesh['edges'] for c in e))
+            output.append('};')
+            item['mesh'] = (f'{{vertices_{symbol}, {len(mesh["vertices"])}, normals_{symbol}, triangles_{symbol}, '
+                            f'{len(mesh["triangles"])}, edges_{symbol}, {len(mesh["edges"])}, '
+                            f'{mesh["half_width"]}, {mesh["half_height"]}}}')
         output.append('constexpr Item items_' + category['id'] + '[] = {')
         for item in category['items']:
-            symbol = 'model_' + item['id'].replace('-', '_')
             output.append('    {' + ', '.join(json.dumps(item[key]) for key in ('id', 'name', 'kind', 'description')) +
-                          ', {' + symbol + ', sizeof(' + symbol + ') / sizeof(Command)}},')
+                          ', ' + item['mesh'] + '},')
         output.append('};')
-    assert files == set((SOURCE/'svg').glob('*.svg')), 'Missing or orphan SVG models'
+    assert ids == set(MODELS), 'Missing or orphan 3D models'
     output.append('constexpr Category categories[] = {')
     for category in catalog['categories']:
         symbol = 'items_' + category['id']
@@ -163,4 +88,4 @@ if __name__ == '__main__':
         assert DESTINATION.read_text() == data, 'Inventory data is stale; run scripts/build_inventory.py'
     else:
         DESTINATION.write_text(data)
-    print(f'Inventory: {items} items, {commands} vector commands; generated data ' + ('verified' if args.check else 'written'))
+    print(f'Inventory: {items} items, {commands} model triangles; generated data ' + ('verified' if args.check else 'written'))

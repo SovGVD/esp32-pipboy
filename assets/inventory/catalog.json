@@ -10,7 +10,6 @@
           "name": "10mm Pistol",
           "kind": "BALLISTIC / 10MM",
           "description": "Semi-automatic sidearm. A dependable close-range weapon.",
-          "model": "svg/10mm-pistol.svg",
           "source": "https://fallout.fandom.com/wiki/10mm_pistol_(Fallout_4)"
         },
         {
@@ -18,7 +17,6 @@
           "name": "Laser Rifle",
           "kind": "ENERGY / FUSION CELL",
           "description": "A laser gun with a stock for aimed energy attacks.",
-          "model": "svg/laser-rifle.svg",
           "source": "https://fallout.fandom.com/wiki/Laser_gun_(Fallout_4)"
         },
         {
@@ -26,7 +24,6 @@
           "name": "Combat Shotgun",
           "kind": "BALLISTIC / SHELL",
           "description": "Magazine-fed shotgun for close-range fighting.",
-          "model": "svg/combat-shotgun.svg",
           "source": "https://fallout.fandom.com/wiki/Combat_shotgun_(Fallout_4)"
         },
         {
@@ -34,7 +31,6 @@
           "name": "Hunting Rifle",
           "kind": "BALLISTIC / .308",
           "description": "Bolt-action rifle that can be adapted for scoped shooting.",
-          "model": "svg/hunting-rifle.svg",
           "source": "https://fallout.fandom.com/wiki/Hunting_rifle_(Fallout_4)"
         },
         {
@@ -42,7 +38,6 @@
           "name": "Fat Man",
           "kind": "HEAVY / MINI NUKE",
           "description": "Shoulder-fired launcher that sends a miniature nuclear bomb.",
-          "model": "svg/fat-man.svg",
           "source": "https://fallout.fandom.com/wiki/Fat_Man_(Fallout_4)"
         },
         {
@@ -50,7 +45,6 @@
           "name": "Super Sledge",
           "kind": "MELEE / TWO-HANDED",
           "description": "Powered heavy hammer with a slow, hard-hitting swing.",
-          "model": "svg/super-sledge.svg",
           "source": "https://fallout.fandom.com/wiki/Super_sledge_(Fallout_4)"
         }
       ]
@@ -64,7 +58,6 @@
           "name": "Vault 111 Jumpsuit",
           "kind": "CLOTHING / UNDERARMOR",
           "description": "Vault-Tec issue suit with energy and radiation protection.",
-          "model": "svg/vault-111-jumpsuit.svg",
           "source": "https://fallout.fandom.com/wiki/Vault_jumpsuit_(Fallout_4)"
         },
         {
@@ -72,7 +65,6 @@
           "name": "Leather Chest Piece",
           "kind": "ARMOR / TORSO",
           "description": "Light leather body armor, especially useful against energy.",
-          "model": "svg/leather-chest.svg",
           "source": "https://fallout.fandom.com/wiki/Leather_armor_(Fallout_4)"
         },
         {
@@ -80,7 +72,6 @@
           "name": "Combat Chest Piece",
           "kind": "ARMOR / TORSO",
           "description": "Military chest armor with ballistic and energy protection.",
-          "model": "svg/combat-chest.svg",
           "source": "https://fallout.fandom.com/wiki/Combat_armor_(Fallout_4)"
         },
         {
@@ -88,7 +79,6 @@
           "name": "Road Leathers",
           "kind": "CLOTHING / UNDERARMOR",
           "description": "Motorcycle leathers worn beneath separate armor pieces.",
-          "model": "svg/road-leathers.svg",
           "source": "https://fallout.fandom.com/wiki/Road_leathers_(Fallout_4)"
         },
         {
@@ -96,7 +86,6 @@
           "name": "Army Helmet",
           "kind": "ARMOR / HEAD",
           "description": "Pre-War military helmet offering ballistic protection.",
-          "model": "svg/army-helmet.svg",
           "source": "https://fallout.fandom.com/wiki/Army_helmet_(Fallout_4)"
         },
         {
@@ -104,7 +93,6 @@
           "name": "T-60 Helmet",
           "kind": "POWER ARMOR / HEAD",
           "description": "Armored helmet for a T-60 power armor frame.",
-          "model": "svg/t60-helmet.svg",
           "source": "https://fallout.fandom.com/wiki/T-60_power_armor_(Fallout_4)"
         }
       ]
@@ -118,7 +106,6 @@
           "name": "Stimpak",
           "kind": "MEDICAL / HEALING",
           "description": "Injectable medicine that restores health and treats injuries.",
-          "model": "svg/stimpak.svg",
           "source": "https://fallout.fandom.com/wiki/Stimpak_(Fallout_4)"
         },
         {
@@ -126,7 +113,6 @@
           "name": "RadAway",
           "kind": "CHEM / RAD REMOVAL",
           "description": "Medical treatment that removes accumulated radiation.",
-          "model": "svg/radaway.svg",
           "source": "https://fallout.fandom.com/wiki/RadAway_(Fallout_4)"
         },
         {
@@ -134,7 +120,6 @@
           "name": "Rad-X",
           "kind": "CHEM / RAD RESIST",
           "description": "Temporarily increases resistance to radiation.",
-          "model": "svg/rad-x.svg",
           "source": "https://fallout.fandom.com/wiki/Rad-X_(Fallout_4)"
         },
         {
@@ -142,7 +127,6 @@
           "name": "Nuka-Cola",
           "kind": "DRINK / IRRADIATED",
           "description": "Pre-War soft drink. Restores health but also adds radiation.",
-          "model": "svg/nuka-cola.svg",
           "source": "https://fallout.fandom.com/wiki/Nuka-Cola_(Fallout_4)"
         },
         {
@@ -150,7 +134,6 @@
           "name": "Mentats",
           "kind": "CHEM / MENTAL BOOST",
           "description": "Temporarily improves Intelligence and Perception.",
-          "model": "svg/mentats.svg",
           "source": "https://fallout.fandom.com/wiki/Mentats_(Fallout_4)"
         },
         {
@@ -158,7 +141,6 @@
           "name": "Purified Water",
           "kind": "DRINK / CLEAN WATER",
           "description": "Clean drinking water that restores health without radiation.",
-          "model": "svg/purified-water.svg",
           "source": "https://fallout.fandom.com/wiki/Purified_water_(Fallout_4)"
         }
       ]
@@ -172,7 +154,6 @@
           "name": "Bobby Pin",
           "kind": "TOOL / LOCKPICK",
           "description": "Used with a screwdriver to pick wasteland locks.",
-          "model": "svg/bobby-pin.svg",
           "source": "https://fallout.fandom.com/wiki/Bobby_pin_(Fallout_4)"
         },
         {
@@ -180,7 +161,6 @@
           "name": "Holotape",
           "kind": "DATA / RECORDING",
           "description": "Portable recording medium read by terminals and Pip-Boys.",
-          "model": "svg/holotape.svg",
           "source": "https://fallout.fandom.com/wiki/Fallout_4_holotapes"
         },
         {
@@ -188,7 +168,6 @@
           "name": "Overdue Book",
           "kind": "LIBRARY / EXCHANGE",
           "description": "Return at a book return terminal to receive book return tokens.",
-          "model": "svg/overdue-book.svg",
           "source": "https://fallout.fandom.com/wiki/Overdue_book"
         },
         {
@@ -196,7 +175,6 @@
           "name": "Book Return Token",
           "kind": "TOKEN / LIBRARY",
           "description": "Redeem at book return terminals for available rewards.",
-          "model": "svg/book-token.svg",
           "source": "https://fallout.fandom.com/wiki/Book_return_token"
         },
         {
@@ -204,7 +182,6 @@
           "name": "Subway Token",
           "kind": "TOKEN / TRANSIT",
           "description": "Pre-War transit token accepted by subway steward robots.",
-          "model": "svg/subway-token.svg",
           "source": "https://fallout.fandom.com/wiki/Subway_token"
         },
         {
@@ -212,7 +189,6 @@
           "name": "Vault-Tec Bobblehead",
           "kind": "COLLECTIBLE / VAULT-TEC",
           "description": "Collectible figures that grant permanent bonuses when found.",
-          "model": "svg/bobblehead.svg",
           "source": "https://fallout.fandom.com/wiki/Vault-Tec_bobblehead_(Fallout_4)"
         }
       ]
@@ -226,7 +202,6 @@
           "name": "Duct Tape",
           "kind": "SALVAGE / ADHESIVE",
           "description": "A roll of tape salvaged for adhesive and cloth.",
-          "model": "svg/duct-tape.svg",
           "source": "https://fallout.fandom.com/wiki/Duct_tape_(Fallout_4)"
         },
         {
@@ -234,7 +209,6 @@
           "name": "Desk Fan",
           "kind": "SALVAGE / MECHANICAL",
           "description": "Pre-War fan containing gears, screws and steel.",
-          "model": "svg/desk-fan.svg",
           "source": "https://fallout.fandom.com/wiki/Desk_fan_(Fallout_4)"
         },
         {
@@ -242,7 +216,6 @@
           "name": "Wonderglue",
           "kind": "SALVAGE / ADHESIVE",
           "description": "A useful source of adhesive for crafting and repairs.",
-          "model": "svg/wonderglue.svg",
           "source": "https://fallout.fandom.com/wiki/Wonderglue_(Fallout_4)"
         },
         {
@@ -250,7 +223,6 @@
           "name": "Alarm Clock",
           "kind": "SALVAGE / SPRINGS",
           "description": "Old bedside clock containing springs and glass.",
-          "model": "svg/alarm-clock.svg",
           "source": "https://fallout.fandom.com/wiki/Alarm_clock_(Fallout_4)"
         },
         {
@@ -258,7 +230,6 @@
           "name": "Typewriter",
           "kind": "SALVAGE / MECHANICAL",
           "description": "Office machine salvaged for gears, screws and springs.",
-          "model": "svg/typewriter.svg",
           "source": "https://fallout.fandom.com/wiki/Typewriter_(Fallout_4)"
         },
         {
@@ -266,7 +237,6 @@
           "name": "Telephone",
           "kind": "SALVAGE / ELECTRICAL",
           "description": "Rotary telephone salvaged for circuitry, copper and fiberglass.",
-          "model": "svg/telephone.svg",
           "source": "https://fallout.fandom.com/wiki/Telephone_(Fallout_4)"
         }
       ]

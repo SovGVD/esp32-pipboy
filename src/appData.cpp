@@ -2,6 +2,7 @@
 #include "assets/fallout10.h"
 #include <Arcade.h>
 #include <algorithm>
+#include <cmath>
 
 namespace {
 arcade::Session sessions[] = {arcade::Session(arcade::Game::Breaker),arcade::Session(arcade::Game::Patrol)};
@@ -46,6 +47,16 @@ void dataGameBack() {
     isSubMenuEncoderControlList = true;
 }
 
+void dataGameTouch() {
+    if (!dataGameCapturesInput()) return;
+    // Tap above the player row to launch/pause; hold on the player row to steer.
+    if (isTouchTapped && touchY >= 58 && touchY < 200) pendingClick = true;
+    if (isTouchDown && touchDownY >= 200) {
+        const int turn = static_cast<int>(std::lround((touchDownX-sessions[openGame].state().playerX)/10));
+        if (turn) dataGameTurn(std::max(-3,std::min(3,turn)));
+    }
+}
+
 void dataGameVisibility() {
     if (openGame >= 0 && !dataGameCapturesInput()) {
         sessions[openGame].pause();
@@ -80,6 +91,9 @@ void appData() {
         lastGameTime = now;
         pendingTurn = 0; pendingClick = false;
         arcade::render(canvas,sessions[openGame].state());
-    } else arcade::renderLauncher(canvas,listMenuNum,isSubMenuEncoderControlList,sessions[listMenuNum].state().best);
+    } else {
+        arcade::renderLauncher(canvas,listMenuNum,isSubMenuEncoderControlList,sessions[listMenuNum].state().best);
+        touchRegisterList(8,73,192,34,0,arcade::gameCount); // launcher rows as renderLauncher draws them
+    }
     setUiFont();
 }

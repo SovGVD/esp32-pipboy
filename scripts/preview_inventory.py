@@ -20,6 +20,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=Path('/tmp/pipboy-inventory-preview'))
     parser.add_argument('--review', action='store_true', help='Save five representative PNGs plus the full contact sheet')
+    parser.add_argument('--spin', default='t60-helmet', help='Item id for the animated turntable.gif')
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -31,7 +32,7 @@ if __name__ == '__main__':
                         '-I'+str(ROOT/'include'), '-I'+str(ROOT/'lib/Inventory/src'),
                         str(ROOT/'test/host/inventory_test.cpp'), str(ROOT/'lib/Inventory/src/Inventory.cpp'),
                         '-o',str(executable)], check=True)
-        subprocess.run([str(executable),str(temporary)],check=True)
+        subprocess.run([str(executable),str(temporary),args.spin],check=True)
         catalog = json.loads((ROOT/'assets/inventory/catalog.json').read_text())
         sheet = Image.new('RGB',(480*5,272*6))
         for c, category in enumerate(catalog['categories']):
@@ -41,4 +42,9 @@ if __name__ == '__main__':
                     image.save(output/(item['id']+'.png'))
                 sheet.paste(image,(480*c,272*i))
         sheet.save(output/'contact-sheet.png')
+        frames = sorted(temporary.glob('spin-*.ppm'), key=lambda p: int(p.stem.split('-')[1]))
+        images = [Image.open(f).convert('P', palette=Image.ADAPTIVE, colors=8) for f in frames]
+        turn = 6283 / 0.8  # ms per full turn, from inventory::turnRadiansPerMs
+        images[0].save(output/'turntable.gif', save_all=True, append_images=images[1:],
+                       duration=round(turn/len(images)), loop=0, optimize=True)
     print('Native previews written to '+str(output))
