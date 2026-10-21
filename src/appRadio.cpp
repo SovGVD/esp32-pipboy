@@ -3,30 +3,39 @@
 #include "MusicPlayer.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
+#include <Chat.h>
 #include "Pipboy.h"
+#include "assets/fallout10.h"
 const char* PIPBOY_RADIO_DELIMETER = "\t";  // tab
 const char* PIPBOY_RADIO_HEADER = "PIPBOY";
 const char* PIPBOY_RADIO_PING = "P";
-const char* PIPBOY_RADIO_EMOTE = "E"; // Emote
+const char* PIPBOY_RADIO_MESSAGE = "M"; // Text chat message
+const char* PIPBOY_RADIO_EMOTE = "E"; // Emote, only received from older firmware
 
 const char* PIPBOY_RADIO_EMPTY = "_";
 
-const char* PIPBOY_RADIO_EMOTE_CONFUSED = "confused";
-const char* PIPBOY_RADIO_EMOTE_FINREDGU = "fingergu";
-const char* PIPBOY_RADIO_EMOTE_FOLLOW   = "follow";
-const char* PIPBOY_RADIO_EMOTE_FROWN    = "frown";
-const char* PIPBOY_RADIO_EMOTE_HEART    = "heart";
-const char* PIPBOY_RADIO_EMOTE_JOINMYTE = "joinmyte";
-const char* PIPBOY_RADIO_EMOTE_RADIATED = "radiated";
-const char* PIPBOY_RADIO_EMOTE_STARTLED = "startled";
-const char* PIPBOY_RADIO_EMOTE_THDOWN   = "thdown";
-const char* PIPBOY_RADIO_EMOTE_THUP     = "thup";
-const char* PIPBOY_RADIO_EMOTE_WAVE     = "wave";
-const char* PIPBOY_RADIO_EMOTE_FEAR     = "fear";
+struct radioLegacyEmote {
+  const char* code;
+  const char* text;
+};
+
+// @src https://fallout.fandom.com/wiki/Atomic_Shop/Emotes
+const radioLegacyEmote PIPBOY_RADIO_LEGACY_EMOTES[] = {
+  {"confused", "Confused"},
+  {"fingergu", "Finger Guns"},
+  {"follow",   "Follow!"},
+  {"frown",    "Frown"},
+  {"heart",    "Heart"},
+  {"joinmyte", "Join My Team!"},
+  {"radiated", "Radiated"},
+  {"startled", "Startled"},
+  {"thdown",   "Thumbs Down"},
+  {"thup",     "Thumbs Up"},
+  {"wave",     "Wave"},
+  {"fear",     "Fear"},
+};
 
 uint8_t pipboyPeersCount = 0;
-bool isPeerSelected = false;
-uint8_t selectedPeerIdx = 0;
 unsigned long offlineAfter;
 const unsigned long pipboyPeerTTL = 150; // 150 ticks is about 5 second (1 tick per frame)
 const unsigned long PIPBOY_RADIO_PING_TTL = 3000000; // microseconds (10^-6 seconds)
@@ -35,36 +44,36 @@ unsigned long previousPingTime;
 
 #define APP_RADIO_PEERS_Y 87
 #define PIPBOY_RADIO_UNKNOWN_PEER 255
-
-#define APP_RADIO_EMOTE_X 200
-#define APP_RADIO_EMOTE_Y 87
-#define APP_RADIO_EMOTE_W 20
+#define APP_RADIO_MAIN_MENU_ITEM 4
+#define APP_RADIO_CHAT_MENU_ITEM 1
+#define APP_RADIO_POPUP_LINE_WIDTH 34
 
 #define APP_RADIO_MENU_ITEMS 2
 bool isRadioMenuReady = false;
 
 menuItem appRadioMenu[APP_RADIO_MENU_ITEMS] = {
-  {"MUSIC",  5, {0, 0, 0, 0}, appPlayer},
-  {"EMOTES", 6, {0, 0, 0, 0}, appEmotes},
+  {"MUSIC", 5, {0, 0, 0, 0}, appPlayer},
+  {"CHAT",  4, {0, 0, 0, 0}, appChat},
 };
 
-#define APP_RADIO_EMOTES_MENU_ITEMS 12
+namespace {
+chat::History chatHistory;
+chat::Composer chatComposer;
+bool isChatOpen = false;
+bool isChatBroadcast = false;
+char chatPeer[sizeof(radioPeer::name)] = {};
 
-// @src https://fallout.fandom.com/wiki/Atomic_Shop/Emotes
-menuItem appRadioEmotes[APP_RADIO_EMOTES_MENU_ITEMS] = {
-  {"Confused",        8, {0, 0, 0, 0}, appRadioEmotesConfused},
-  {"Finger Guns",    11, {0, 0, 0, 0}, appRadioEmotesFingerGuns},
-  {"Follow!",         7, {0, 0, 0, 0}, appRadioEmotesFollow},
-  {"Frown",           5, {0, 0, 0, 0}, appRadioEmotesFrown},
-  {"Heart",           5, {0, 0, 0, 0}, appRadioEmotesHeart},
-  {"Join My Team!",  13, {0, 0, 0, 0}, appRadioEmotesJoinMyTeam},
-  {"Radiated",        8, {0, 0, 0, 0}, appRadioEmotesRadiated},
-  {"Startled",        8, {0, 0, 0, 0}, appRadioEmotesStartled},
-  {"Thumbs Down",    11, {0, 0, 0, 0}, appRadioEmotesThumbsDown},
-  {"Thumbs Up",       9, {0, 0, 0, 0}, appRadioEmotesThumbsUp},
-  {"Wave",            4, {0, 0, 0, 0}, appRadioEmotesWave},
-  {"Fear",            4, {0, 0, 0, 0}, appRadioEmotesFear},
+class ChatCanvas : public chat::Canvas {
+public:
+  void line(int x1, int y1, int x2, int y2, uint16_t color) override { gfx->drawLine(x1, y1, x2, y2, color); }
+  void rectangle(int x, int y, int width, int height, uint16_t color) override { gfx->fillRect(x, y, width, height, color); }
+  void text(int x, int baseline, const char* text, uint16_t color) override {
+    gfx->setCursor(x, baseline);
+    gfx->setTextColor(color);
+    gfx->print(text);
+  }
 };
+}
 
 void setupAppRadioMenu()
 {
@@ -86,7 +95,7 @@ void appRadio()
     subMenuNum,
     COLOR_MAIN,
     COLOR_INACTIVE,
-    menuItems[4].g.x - appRadioMenu[subMenuNum].g.x
+    menuItems[APP_RADIO_MAIN_MENU_ITEM].g.x - appRadioMenu[subMenuNum].g.x
   );
 
   appRadioMenu[subMenuNum].app();
@@ -95,53 +104,72 @@ void appRadio()
 /**
  * /!\ Please don't expect any security/privacy/crtypto features, that is as simple as possible /!\
  */
-void appEmotes()
+void appChat()
 {
   radioUpdatePipboyPeersCount();
+
+  if (isChatOpen) {
+    if (!isSubMenuButtonLongPressed || isDisplayMessageWindow) {
+      appRadioChatWindow();
+      return;
+    }
+    // Hold goes back one level: from the conversation to the peer list.
+    isChatOpen = false;
+    isSubMenuEncoderControlList = true;
+    listMenuNum = 0;
+  }
 
   if (pipboyPeersCount == 0) {
     appRadioNoSignal();
     return;
   }
 
-  if (isPeerSelected && !pipboyPeers[selectedPeerIdx].isOnline) {
-    isPeerSelected = false;
-    listMenuNum = 0;
-  }
-
-  if (isPeerSelected) {
-    appRadioEmoteSelector();
-  } else {
-    appRadioPeerSelector();
-  }
+  appRadioPeerSelector();
 }
 
-void appRadioEmoteSelector()
+void appRadioChatWindow()
 {
-  listMenuItems = APP_RADIO_EMOTES_MENU_ITEMS;
+  const bool isTyping = isSubMenuEncoderControlList && !isDisplayMessageWindow;
+  if (isTyping && isSubMenuButtonClicked) {
+    char text[chat::maxText + 1];
+    if (chatComposer.press(text)) {
+      radioSendChat(text);
+    }
+  }
 
-  drawListMenu(
-    appRadioEmotes,
-    APP_RADIO_EMOTES_MENU_ITEMS,
-    listMenuNum,
-    COLOR_MAIN,
-    COLOR_SCREEN,
-    20,
-    APP_RADIO_PEERS_Y,
-    16
-  );
+  ChatCanvas canvas;
+  const chat::View view = {
+    &chatHistory,
+    &chatComposer,
+    chatPeer,
+    isChatBroadcast,
+    radioIsPeerOnline(chatPeer),
+    isTyping
+  };
+  gfx->setFont(&monofonto10pt7b);
+  chat::render(canvas, view);
+  setUiFont();
+}
 
-  appRadioEmotes[listMenuNum].app();
+bool radioChatCapturesInput()
+{
+  return mainMenuNum == APP_RADIO_MAIN_MENU_ITEM && subMenuNum == APP_RADIO_CHAT_MENU_ITEM &&
+    isChatOpen && isSubMenuEncoderControlList && !isDisplayMessageWindow && !isInSetupMode;
+}
+
+void radioChatTurn(int32_t turn)
+{
+  chatComposer.turn(turn);
 }
 
 void appRadioPeerSelector()
 {
-  /**
-   * @TODO broadcast option
-   */
-  uint8_t menuIdx = 0;
-  menuItem peers[PIPBOY_RADIO_MAX_PEERS] = {};
-  if (listMenuNum >= pipboyPeersCount) listMenuNum = pipboyPeersCount - 1;
+  // First entry talks to everyone nearby, the rest are online peers.
+  menuItem peers[PIPBOY_RADIO_MAX_PEERS + 1] = {};
+  uint8_t peerIndexes[PIPBOY_RADIO_MAX_PEERS + 1] = {};
+  strcpy(peers[0].name, "ALL");
+  peers[0].nameLength = 3;
+  uint8_t menuIdx = 1;
 
   for (uint8_t idx = 0; idx < PIPBOY_RADIO_MAX_PEERS; idx++) {
     if (!pipboyPeers[idx].isOnline) {
@@ -150,23 +178,18 @@ void appRadioPeerSelector()
 
     strncpy(peers[menuIdx].name, pipboyPeers[idx].name, pipboyPeers[idx].nameLength);
     peers[menuIdx].name[pipboyPeers[idx].nameLength] = '\0';
-
     peers[menuIdx].nameLength = pipboyPeers[idx].nameLength;
-    peers[menuIdx].g = {0,0,0,0};
-    peers[menuIdx].app = appRadioPeerItem;  // Do nothing
-
-    if (listMenuNum == menuIdx) {
-      selectedPeerIdx = idx;
-    }
+    peerIndexes[menuIdx] = idx;
 
     menuIdx++;
   }
 
-  listMenuItems = pipboyPeersCount;
+  listMenuItems = menuIdx;
+  if (listMenuNum >= listMenuItems) listMenuNum = listMenuItems - 1;
 
   drawListMenu(
     peers,
-    pipboyPeersCount,
+    menuIdx,
     listMenuNum,
     COLOR_MAIN,
     COLOR_SCREEN,
@@ -175,9 +198,10 @@ void appRadioPeerSelector()
     16
   );
 
-  if (isSubMenuButtonClicked) {
-    peers[listMenuNum].app();
-    listMenuNum = 0;
+  if (isSubMenuButtonClicked && !isDisplayMessageWindow) {
+    isChatBroadcast = listMenuNum == 0;
+    strcpy(chatPeer, isChatBroadcast ? PIPBOY_RADIO_EMPTY : pipboyPeers[peerIndexes[listMenuNum]].name);
+    isChatOpen = true;
   }
 }
 
@@ -188,10 +212,15 @@ void appRadioNoSignal()
   gfx->print("NO SIGNAL");
 }
 
-void appRadioPeerItem()
+bool radioIsPeerOnline(const char* peerName)
 {
-  listMenuNum = 0;
-  isPeerSelected = true;
+  for (uint8_t idx = 0; idx < PIPBOY_RADIO_MAX_PEERS; idx++) {
+    if (pipboyPeers[idx].isOnline && strcmp(pipboyPeers[idx].name, peerName) == 0) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 namespace {
@@ -231,6 +260,15 @@ void radioDataReceived(uint8_t* address, uint8_t* data, uint8_t len, signed int 
 }
 
 
+bool radioIsPrintable(const char* text)
+{
+  for (const char* c = text; *c; c++) {
+    if (*c < 0x20 || *c > 0x7e) return false;
+  }
+
+  return true;
+}
+
 bool radioIsForThisPipboy(char* to)
 {
   if (strlen(to) == 1 && strcmp(to, PIPBOY_RADIO_EMPTY) == 0) {
@@ -256,58 +294,52 @@ void processRadioMessage(char* cmd, char* from, char* to, char* body, signed int
     return;
   }
 
+  if (strcmp(cmd, PIPBOY_RADIO_MESSAGE) == 0) {
+    processRadioMessageChat(from, body, strcmp(to, PIPBOY_RADIO_EMPTY) == 0);
+    return;
+  }
+
   if (strcmp(cmd, PIPBOY_RADIO_EMOTE) == 0) {
-    processRadioMessageEmote(from, body);
+    processRadioMessageEmote(from, body, strcmp(to, PIPBOY_RADIO_EMPTY) == 0);
     return;
   }
 }
 
-void processRadioMessageEmote(char* from, char* emote)
+void processRadioMessageChat(const char* from, const char* text, bool isBroadcast)
 {
-  const char* peerName = "UNKNOWN";
-  for (uint8_t idx = 0; idx < PIPBOY_RADIO_MAX_PEERS; idx++) {
-    if (strlen(pipboyPeers[idx].name) == strlen(from) && memcmp(pipboyPeers[idx].name, from, strlen(from)) == 0) {
-      peerName = (char*) pipboyPeers[idx].name;
-    }
+  char cleanText[chat::maxText + 1];
+  if (!chat::sanitize(cleanText, sizeof(cleanText), text)) {
+    return;
   }
 
-  // @TODO display GIFs?
-  // @TODO that copy-paste killing me
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_CONFUSED) == 0) {
-    setDisplayMessage(peerName, "Confused");
+  chatHistory.add(from, cleanText, false, isBroadcast);
+  const chat::Message& message = chatHistory.at(chatHistory.size() - 1);
+
+  // No popup for the conversation that is already on screen.
+  const bool isVisible = mainMenuNum == APP_RADIO_MAIN_MENU_ITEM && subMenuNum == APP_RADIO_CHAT_MENU_ITEM &&
+    isChatOpen && chat::inConversation(message, chatPeer, isChatBroadcast);
+  if (isVisible) {
+    return;
   }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_FINREDGU) == 0) {
-    setDisplayMessage(peerName, "Finger Guns");
+
+  chat::Line lines[4];
+  const size_t linesCount = min(chat::wrap(message.text, APP_RADIO_POPUP_LINE_WIDTH, lines, 4), (size_t)4);
+  String body;
+  for (size_t idx = 0; idx < linesCount; idx++) {
+    if (idx) body += "\n";
+    body += String(message.text + lines[idx].start).substring(0, lines[idx].length);
   }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_FOLLOW) == 0) {
-    setDisplayMessage(peerName, "Follow!");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_FROWN) == 0) {
-    setDisplayMessage(peerName, "Frown");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_HEART) == 0) {
-    setDisplayMessage(peerName, "Heart");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_JOINMYTE) == 0) {
-    setDisplayMessage(peerName, "Join My Team!");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_RADIATED) == 0) {
-    setDisplayMessage(peerName, "Radiated");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_STARTLED) == 0) {
-    setDisplayMessage(peerName, "Startled");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_THDOWN) == 0) {
-    setDisplayMessage(peerName, "Thumbs Down");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_THUP) == 0) {
-    setDisplayMessage(peerName, "Thumbs Up");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_WAVE) == 0) {
-    setDisplayMessage(peerName, "Wave");
-  }
-  if (strcmp(emote, PIPBOY_RADIO_EMOTE_FEAR) == 0) {
-    setDisplayMessage(peerName, "Fear");
+  setDisplayMessage(isBroadcast ? "Message to all" : "Incoming message", from, body.c_str());
+}
+
+void processRadioMessageEmote(char* from, char* emote, bool isBroadcast)
+{
+  for (const radioLegacyEmote& legacyEmote : PIPBOY_RADIO_LEGACY_EMOTES) {
+    if (strcmp(emote, legacyEmote.code) == 0) {
+      const String text = "*" + String(legacyEmote.text) + "*";
+      processRadioMessageChat(from, text.c_str(), isBroadcast);
+      return;
+    }
   }
 }
 
@@ -437,121 +469,21 @@ void radioUpdate()
     char* body = strtok_r(nullptr, PIPBOY_RADIO_DELIMETER, &save);
     if (!header || !from || !to || !cmd || !body ||
         strcmp(header, PIPBOY_RADIO_HEADER) || strlen(from) >= sizeof(radioPeer::name) ||
-        strlen(to) >= sizeof(radioPeer::name)) continue;
+        strlen(to) >= sizeof(radioPeer::name) || !radioIsPrintable(from)) continue;
     processRadioMessage(cmd, from, to, body, packet.rssi);
   }
   radioPing();
 }
 
-void radioSendEmote(const char* emoteCode)
+void radioSendChat(const char* text)
 {
-  if (!isSubMenuButtonClicked) {
-    return;
-  }
-
-  radioMsg emoteMessage = radioMessage(
-    PIPBOY_RADIO_EMOTE,
-    pipboyPeers[selectedPeerIdx].name,
-    (char*) emoteCode,
-    pipboyPeers[selectedPeerIdx].isBroadcast
+  radioMsg chatMessage = radioMessage(
+    PIPBOY_RADIO_MESSAGE,
+    chatPeer,
+    (char*) text,
+    isChatBroadcast
   );
 
-  radioSend(emoteMessage);
-
-  isPeerSelected = false;
-  listMenuNum = 0;
-}
-
-void radioShowPreSelectedEmote(const char* emoteCode, const char* txt)
-{
-  displayTxt(txt, APP_RADIO_EMOTE_X, APP_RADIO_EMOTE_Y, APP_RADIO_EMOTE_W);
-
-  if (isSubMenuButtonClicked) {
-    radioSendEmote(emoteCode);
-  }
-}
-
-void appRadioEmotesConfused()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_CONFUSED,
-    "PIPBOY_RADIO_EMOTE_CONFUSED"
-  );
-}
-void appRadioEmotesFingerGuns()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_FINREDGU,
-    "PIPBOY_RADIO_EMOTE_FINREDGU"
-  );
-}
-void appRadioEmotesFollow()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_FOLLOW,
-    "PIPBOY_RADIO_EMOTE_FOLLOW"
-  );
-}
-void appRadioEmotesFrown()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_FROWN,
-    "PIPBOY_RADIO_EMOTE_FROWN"
-  );
-}
-void appRadioEmotesHeart()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_HEART,
-    "PIPBOY_RADIO_EMOTE_HEART"
-  );
-}
-void appRadioEmotesJoinMyTeam()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_JOINMYTE,
-    "PIPBOY_RADIO_EMOTE_JOINMYTE"
-  );
-}
-void appRadioEmotesRadiated()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_RADIATED,
-    "PIPBOY_RADIO_EMOTE_RADIATED"
-  );
-}
-void appRadioEmotesStartled()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_STARTLED,
-    "PIPBOY_RADIO_EMOTE_STARTLED"
-  );
-}
-void appRadioEmotesThumbsDown()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_THDOWN,
-    "PIPBOY_RADIO_EMOTE_THDOWN"
-  );
-}
-void appRadioEmotesThumbsUp()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_THUP,
-    "PIPBOY_RADIO_EMOTE_THUP"
-  );
-}
-void appRadioEmotesWave()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_WAVE,
-    "PIPBOY_RADIO_EMOTE_WAVE"
-  );
-}
-void appRadioEmotesFear()
-{
-  radioShowPreSelectedEmote(
-    PIPBOY_RADIO_EMOTE_FEAR,
-    "PIPBOY_RADIO_EMOTE_FEAR"
-  );
+  radioSend(chatMessage);
+  chatHistory.add(chatPeer, text, true, isChatBroadcast);
 }

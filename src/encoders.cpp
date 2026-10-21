@@ -27,10 +27,13 @@ void encoderUpdate()
 
   updateMenuByEncoder();
   dataGameVisibility();
+  // PCNT detents are absolute; games and the keyboard need the full delta, not just its sign.
+  const int64_t delta = static_cast<int64_t>(currentSubMenuEncoderPosition) - previousSubMenuEncoderPosition;
+  const int32_t turn = static_cast<int32_t>(std::max<int64_t>(-100,std::min<int64_t>(100,delta)));
   if (dataGameCapturesInput()) {
-    // PCNT detents are absolute; games need the full delta, not just its sign.
-    const int64_t delta = static_cast<int64_t>(currentSubMenuEncoderPosition) - previousSubMenuEncoderPosition;
-    dataGameTurn(static_cast<int32_t>(std::max<int64_t>(-100,std::min<int64_t>(100,delta))));
+    dataGameTurn(turn);
+  } else if (radioChatCapturesInput()) {
+    if (turn) radioChatTurn(turn);
   } else {
     updateSubMenuByEncoder();
     updateListByEncoder();

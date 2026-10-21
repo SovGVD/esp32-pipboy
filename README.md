@@ -2,7 +2,7 @@
 
 Pip-Boy UI for the JC4827W543 ESP32-S3 display board, built with PlatformIO
 and the Arduino framework. Includes illustrated inventory, two arcade games,
-background SD music and ESP-NOW emote communication.
+background SD music and ESP-NOW text chat with an on-screen keyboard.
 
 ## Guides
 
@@ -13,7 +13,7 @@ background SD music and ESP-NOW emote communication.
 | [Inventory](docs/inventory/README.md) | Fallout items, illustrations, sources and SVG editing. |
 | [Games](docs/games/README.md) | ATOM BREAKER and STAR PATROL controls, rules and previews. |
 | [Music](docs/music/README.md) | SD setup, playback, ID3 tags, volume and boost. |
-| [Emoji communication](docs/communication/README.md) | Nearby peers, ESP-NOW emotes and message format. |
+| [Chat communication](docs/communication/README.md) | Nearby peers, on-screen keyboard, ESP-NOW messages and format. |
 | [Build and development](docs/development/README.md) | PlatformIO setup, migration details and verification. |
 
 ## Quick start

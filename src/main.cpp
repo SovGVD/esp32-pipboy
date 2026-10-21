@@ -104,7 +104,7 @@ void setup()
   music::begin();
 
   // For debug
-  // setDisplayMessage("from", "message is 123");
+  // setDisplayMessage("Incoming message", "from", "message is 123");
 }
 
 void loop(void)
@@ -246,9 +246,9 @@ void displayTxt(String txt, uint16_t x, uint16_t y, uint16_t wMaxChars)
   }
 }
 
-void setDisplayMessage(const char* from, const char* txt)
+void setDisplayMessage(const char* header, const char* from, const char* txt)
 {
-  displayMessageWindowHeader = "You receive emote";
+  displayMessageWindowHeader = header;
   displayMessageWindowBody = "From: " + (String)from + "\n" + (String)txt;
 
   isDisplayMessageWindow = true;
@@ -289,7 +289,8 @@ void displayMessage()
   );
 
   displayTxt(displayMessageWindowHeader, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT, 20);
-  displayTxt(displayMessageWindowBody, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT * 3, 20);
+  // Chat text arrives pre-wrapped to 34 columns, so only its new lines break it.
+  displayTxt(displayMessageWindowBody, MESSAGE_WINDOW_PADDING + MESSAGE_WINDOW_BORDER * 2, MESSAGE_WINDOW_PADDING + CHAR_HEIGHT * 3, 36);
 
   if (isSubMenuButtonClicked || isSubMenuButtonLongPressed) {
     isDisplayMessageWindow = false;

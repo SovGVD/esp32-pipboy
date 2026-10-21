@@ -16,7 +16,9 @@ encoder to switch between STAT, INV, DATA, MAP and RADIO.
 
 Games use the secondary encoder for movement and click for start/pause/resume;
 hold returns to the game list. See the [game controls](../games/README.md#controls).
-Incoming emotes open a message window; click or hold dismisses it. Games pause
+In RADIO → CHAT, the secondary encoder moves through the on-screen keyboard
+and click presses a key; see the [chat controls](../communication/README.md#keyboard).
+Incoming messages open a message window; click or hold dismisses it. Games pause
 while that window is open and require a click to resume. Music keeps playing.
 
 ## Main tabs
@@ -27,7 +29,7 @@ while that window is open and require a click to resume. Music keeps playing.
 | INV | WEAPONS, APPAREL, AID, MISC and JUNK each contain six illustrated items. This is a reference catalog with no equipment or consumption effects. |
 | DATA | GAMES launches ATOM BREAKER and STAR PATROL. Runs and best scores last until reboot. |
 | MAP | Placeholder; no map or GPS view is implemented. |
-| RADIO | MUSIC plays MP3s from SD. EMOTES discovers nearby Pip-Boys and sends named emotes. |
+| RADIO | MUSIC plays MP3s from SD. CHAT discovers nearby Pip-Boys and exchanges text messages typed on an on-screen keyboard. |
 
 The current font contains ASCII glyphs; unsupported music-tag characters appear
 as `?`. Inventory and games have native-resolution software previews for layout
@@ -40,4 +42,4 @@ review; the real display and encoder feel still need checking on the board.
 - [Games: controls and rules](../games/README.md) ·
   [Game screens](../games/previews/contact-sheet.png)
 - [Music: SD setup, metadata and playback](../music/README.md)
-- [Emoji communication: peers and notifications](../communication/README.md)
+- [Chat communication: peers, keyboard and notifications](../communication/README.md)

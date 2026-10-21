@@ -20,6 +20,8 @@ const GFXfont uiFont={nullptr,nullptr,32,126,26};
 void setUiFont(){gfx->setFont(&uiFont);}
 void setupSubMenu(menuItem* menu,uint8_t){menu[0].g.x=60;}
 void drawMenu(menuItem*,uint8_t,uint8_t,uint16_t,uint16_t,uint16_t){}
+bool radioChatCapturesInput(){return false;}
+void radioChatTurn(int32_t){}
 bool shows(const char* text){return std::find(display.texts.begin(),display.texts.end(),text)!=display.texts.end();}
 void frame(){display.clear();hostClock+=32;appData();resetSubMenuButton();assert(gfx->font==&uiFont);}
 void click(){onSubMenuClicked(subMenuEncoderButton);frame();}

@@ -59,6 +59,8 @@ void dataGameTurn(int32_t);
 void dataGameClick();
 void dataGameBack();
 void dataGameVisibility();
+bool radioChatCapturesInput();
+void radioChatTurn(int32_t);
 void onSubMenuClicked(EncoderButton&);
 void onSubMenuLongPress(EncoderButton&);
 void updateMenuByEncoder();

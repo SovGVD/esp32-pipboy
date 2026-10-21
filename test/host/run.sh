@@ -35,3 +35,7 @@ ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/arcade_preview"
     test/host/arcade_controls_test.cpp src/appData.cpp src/encoders.cpp \
     lib/Arcade/src/Arcade.cpp lib/Arcade/src/ArcadeRender.cpp -o "$build_dir/arcade_controls_test"
 ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/arcade_controls_test"
+"${CXX:-g++}" -std=c++11 -Wall -Wextra -Werror -g -fsanitize=address,undefined \
+    -fno-omit-frame-pointer -I include -I lib/Chat/src \
+    test/host/chat_test.cpp lib/Chat/src/Chat.cpp lib/Chat/src/ChatRender.cpp -o "$build_dir/chat_test"
+ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$build_dir/chat_test"
