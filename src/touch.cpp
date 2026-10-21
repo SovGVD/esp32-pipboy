@@ -98,6 +98,19 @@ void touchDrawCross(int16_t x, int16_t y)
 }
 }
 
+bool touchIsHeld()
+{
+  // Three samples in a row, so one noisy reading does not count.
+  for (uint8_t idx = 0; isTouchReady && idx < 3; idx++) {
+    int rawX, rawY, pressure;
+    if (!touchSample(rawX, rawY, pressure)) {
+      return false;
+    }
+    delay(20);
+  }
+  return isTouchReady;
+}
+
 bool touchHasSavedCalibration()
 {
   return settings.touch.magic == PIPBOY_TOUCH_CALIBRATION_MAGIC && touch::valid(touchSavedCalibration());
@@ -122,6 +135,7 @@ void touchCalibrate(bool isFirstBoot)
 
   while (isTouchReady) {
     buttonsUpdate();
+    bootButtonUpdate();
     currentTime = micros();
     if (currentTime - previousTime < LOOP_TIME) {
       delay(1);
@@ -129,7 +143,7 @@ void touchCalibrate(bool isFirstBoot)
     }
     previousTime = currentTime;
 
-    if (isSubMenuButtonClicked || isSubMenuButtonLongPressed) {
+    if (isSubMenuButtonClicked || isSubMenuButtonLongPressed || bootButtonClicked()) {
       if (isFirstBoot) {
         // Do not ask again on every boot; CALIBRATE TOUCH in setup mode remains.
         touchSaveCalibration(defaultCalibration);
@@ -167,7 +181,7 @@ void touchCalibrate(bool isFirstBoot)
     gfx->setCursor(105, 104);
     gfx->printf("TOUCH CALIBRATION %d/%d", step + 1, verifyStep + 1);
     gfx->setCursor(105, 128);
-    gfx->print(isFirstBoot ? "Click dial to skip" : "Click dial to cancel");
+    gfx->print(isFirstBoot ? "Click dial or BOOT to skip" : "Click dial or BOOT to cancel");
     gfx->setCursor(105, 200);
     gfx->print(status);
 

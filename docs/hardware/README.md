@@ -11,6 +11,7 @@ and 480×272 framebuffer. SD and NS4163 audio wiring matches the working
 | --- | --- | --- |
 | SD card, SPI2 / FSPI | CS / SCK / MISO / MOSI | 10 / 12 / 13 / 11 |
 | XPT2046 resistive touch, SPI2 shared with SD | CS / IRQ | 38 / 3 |
+| BOOT button (opens setup when held for 2 s after start) | Active low | 0 |
 | NS4163, I2S | BCLK / LRCLK / DATA | 42 / 2 / 41 |
 | Display, SPI3 | CS / SCK / D0 / D1 / D2 / D3 | 45 / 47 / 21 / 48 / 40 / 39 |
 | Display | Backlight | 1 |
@@ -38,11 +39,12 @@ calibration screen before the main UI. Tap the center of each cross: four
 corner targets, then a center check. If the check lands more than 20 px away,
 or the corner taps barely differ, it starts over. The result (raw ranges,
 axis swap and inversion) is saved in EEPROM next to the device name. Click the
-dial to skip; the defaults are then saved so it is not asked again.
+dial or press BOOT to skip; the defaults are then saved so it is not asked
+again.
 
-To recalibrate later, hold the secondary encoder button while powering on to
-enter [setup mode](../screens/README.md#setup-mode) and choose
-**CALIBRATE TOUCH** (click the dial there to cancel).
+To recalibrate later, open [setup mode](../screens/README.md#setup-mode)
+(for example by holding BOOT for 2 seconds) and choose **CALIBRATE TOUCH**
+(click the dial or press BOOT there to cancel).
 
 The defaults in `include/Hardware.h` come from the
 [Dragonfruit JC4827W543 port](https://github.com/SovGVD/Dragonfruit-JC4827W543-esp32/blob/main/docs/jc4827w543.md#calibrate-resistive-touch)

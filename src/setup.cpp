@@ -30,6 +30,9 @@ void setupMode()
 {
   Serial.println("Setup mode");
   isInSetupMode = true;
+  isDisplayMessageWindow = false;
+  bootButtonClicked(); // drop presses from before setup mode
+  bootButtonHeld();
   setupShowMenu(0);
 
   setupLoop();
@@ -41,12 +44,20 @@ void setupMode()
 void setupLoop() {
   while(isInSetupMode) {
     buttonsUpdate();
+    bootButtonUpdate();
     currentTime = micros();
     if (currentTime - previousTime >= LOOP_TIME) {
       encoderUpdate();
       touchUpdate();
       if (isTouchTapped && setupPage == SetupPage::Menu) {
         touchListTap();
+      }
+      if (bootButtonClicked() && setupPage == SetupPage::Menu) {
+        // Without dials or touch: BOOT click moves down the menu, BOOT hold selects.
+        listMenuNum = (listMenuNum + 1) % SETUP_MENU_ITEMS;
+      }
+      if (bootButtonHeld() && setupPage == SetupPage::Menu) {
+        isSubMenuButtonClicked = true;
       }
       touchClearRegions();
       previousTime = currentTime;
@@ -115,6 +126,8 @@ void setupMenuPage()
   gfx->print(settings.pipboyName);
   gfx->setCursor(20, 224);
   gfx->print(touchHasSavedCalibration() ? "TOUCH: CALIBRATED" : "TOUCH: DEFAULT");
+  gfx->setCursor(20, 260);
+  gfx->print("BOOT: NEXT   HOLD BOOT: SELECT");
 
   if (isSubMenuButtonClicked) {
     setupModeMenu[listMenuNum].app();

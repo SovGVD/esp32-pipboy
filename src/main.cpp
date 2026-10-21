@@ -28,12 +28,55 @@ bool isInSetupMode = false;
 bool isTouchTapped = false, isTouchDown = false;
 int16_t touchX = -1, touchY = -1, touchDownX = -1, touchDownY = -1;
 
+namespace {
+bool isBootButtonDown = false, isBootButtonHoldReported = false, isBootButtonClickPending = false;
+bool isBootButtonHoldPending = false;
+unsigned long bootButtonDownAt = 0;
+}
+
+/**
+ * BOOT works without the dials: a short press reports a click, holding it
+ * for bootButtonHoldMs reports a hold (once per press).
+ */
+void bootButtonUpdate()
+{
+  const bool isDown = digitalRead(hardware::bootButton) == LOW;
+  const unsigned long now = millis();
+  if (isDown && !isBootButtonDown) {
+    bootButtonDownAt = now;
+    isBootButtonHoldReported = false;
+  }
+  if (isDown && !isBootButtonHoldReported && now - bootButtonDownAt >= hardware::bootButtonHoldMs) {
+    isBootButtonHoldReported = true;
+    isBootButtonHoldPending = true;
+  }
+  if (!isDown && isBootButtonDown && !isBootButtonHoldReported) {
+    isBootButtonClickPending = true;
+  }
+  isBootButtonDown = isDown;
+}
+
+bool bootButtonClicked()
+{
+  const bool isClicked = isBootButtonClickPending;
+  isBootButtonClickPending = false;
+  return isClicked;
+}
+
+bool bootButtonHeld()
+{
+  const bool isHeld = isBootButtonHoldPending;
+  isBootButtonHoldPending = false;
+  return isHeld;
+}
+
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Pipboy OS-ish loading start");
 
   encoderSetup();
+  pinMode(hardware::bootButton, INPUT_PULLUP);
   Serial.println("Encoders... DONE");
 
   buttonsUpdate();
@@ -85,7 +128,8 @@ void setup()
 
   Serial.printf("User: %s\n", settings.pipboyName);
 
-  if (isSubMenuButtonLongPressed) {
+  // Setup without the dials: a finger held on the screen while booting.
+  if (isSubMenuButtonLongPressed || touchIsHeld()) {
     setupMode();
     return;
   }
@@ -120,6 +164,10 @@ void setup()
 void loop(void)
 {
   buttonsUpdate();
+  bootButtonUpdate();
+  if (bootButtonHeld()) {
+    setupMode(); // restarts when done
+  }
   currentTime = micros();
 	if (currentTime - previousTime >= LOOP_TIME) {
     encoderUpdate();

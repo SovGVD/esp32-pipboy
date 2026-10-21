@@ -11,6 +11,10 @@ constexpr int sdSck = 12;
 constexpr int sdMiso = 13;
 constexpr int sdMosi = 11;
 // XPT2046 resistive touch shares the SD SPI bus (SCK/MISO/MOSI above).
+// BOOT button: free after reset. Holding it during power-on/reset starts the
+// ROM bootloader instead, so it is only read once the firmware runs.
+constexpr int bootButton = 0;
+constexpr unsigned long bootButtonHoldMs = 2000;
 constexpr int touchCs = 38;
 constexpr int touchIrq = 3;
 // Starting calibration from the Dragonfruit JC4827W543 port, not a measurement

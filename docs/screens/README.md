@@ -31,14 +31,25 @@ while that window is open and require a click to resume. Music keeps playing.
 
 ## Setup mode
 
-Hold the secondary encoder button while powering on to open the setup menu.
-Turn to choose and click to select, or tap an item twice:
+Open the setup menu in any of these ways:
+
+- hold the secondary encoder button while powering on;
+- hold a finger on the touchscreen while powering on, until the menu appears;
+- at any time, hold the board's **BOOT** button for 2 seconds. Do not hold
+  BOOT while pressing reset or plugging in: the ESP32 then starts its USB
+  bootloader instead of the Pip-Boy.
+
+Turn to choose and click to select, tap an item twice, or press BOOT to move
+to the next item and hold BOOT to select it:
 
 | Item | Action |
 | --- | --- |
 | CHANGE NAME | Edit the device name used by chat. With the dial: turn to pick a character position and click, turn to pick the letter and click to set it. By touch: tap a position, then tap a letter in the palette below (the cursor moves to the next position; `_` is a space). Select or tap `[SUBMIT]` to save and return to the menu. |
 | CALIBRATE TOUCH | Run the [touch calibration](../hardware/README.md#calibration) and save it. |
 | SAVE AND EXIT | Save settings and restart. |
+
+The calibration screen can be skipped or cancelled with a dial click or a
+BOOT press, so setup never depends on touch already working.
 
 The menu also shows the current name and whether touch is calibrated. On the
 very first start, touch calibration runs automatically once.
