@@ -36,7 +36,7 @@ void drawCategory(size_t index) {
   listMenuNum = category ? inventory::clampSelection(*category, listMenuNum) : 0;
   DisplayCanvas canvas;
   gfx->setFont(&monofonto10pt7b);
-  inventory::render(canvas, index, listMenuNum, isSubMenuEncoderControlList);
+  inventory::render(canvas, index, listMenuNum, isSubMenuEncoderControlList, millis());
   if (category) {
     const unsigned first = inventory::firstVisible(*category, listMenuNum);
     touchRegisterList(inventory::listX, inventory::listTop, inventory::listWidth, inventory::listRowHeight,

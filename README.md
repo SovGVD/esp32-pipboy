@@ -10,7 +10,7 @@ background SD music and ESP-NOW text chat with an on-screen keyboard.
 | --- | --- |
 | [Hardware](docs/hardware/README.md) | Board, display, wiring, SD, audio and enclosure references. |
 | [Screens and controls](docs/screens/README.md) | Main tabs, encoder navigation and current screen features. |
-| [Inventory](docs/inventory/README.md) | Fallout items, illustrations, sources and SVG editing. |
+| [Inventory](docs/inventory/README.md) | Fallout items, rotating 3D wireframe models, sources and model editing. |
 | [Games](docs/games/README.md) | ATOM BREAKER and STAR PATROL controls, rules and previews. |
 | [Music](docs/music/README.md) | SD setup, playback, ID3 tags, volume and boost. |
 | [Chat communication](docs/communication/README.md) | Nearby peers, on-screen keyboard, ESP-NOW messages and format. |
