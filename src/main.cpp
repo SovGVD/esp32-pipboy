@@ -74,6 +74,9 @@ void setup()
   settingsLoad();
   Serial.println("Settings... DONE");
 
+  // Before setup mode and before the music task mounts SD on the shared bus.
+  touchSetup();
+
   menuItems[0] = menuItem{"STAT",  4, {0, 0, 0, 0}, appStat};
   menuItems[1] = menuItem{"INV",   3, {0, 0, 0, 0}, appInv};
   menuItems[2] = menuItem{"DATA",  4, {0, 0, 0, 0}, appData};
@@ -85,6 +88,11 @@ void setup()
   if (isSubMenuButtonLongPressed) {
     setupMode();
     return;
+  }
+
+  if (!touchHasSavedCalibration()) {
+    // First start: calibrate once; skipping keeps the defaults.
+    touchCalibrate(true);
   }
 
   stat_hp = random(30, 99);
@@ -103,7 +111,6 @@ void setup()
   resetSubMenuButton();
   Serial.println("All DONE!");
   isSetup = false;
-  touchSetup();
   music::begin();
 
   // For debug

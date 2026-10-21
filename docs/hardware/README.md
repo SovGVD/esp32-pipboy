@@ -31,15 +31,25 @@ music task. Five X/Y samples are median-filtered, discarding the first
 conversion after each axis switch. Touch is polled once per UI frame and is
 currently used by RADIO → CHAT and to dismiss message windows.
 
-Calibration constants are in `include/Hardware.h`. They start from the
+### Calibration
+
+On the first start (no saved calibration in EEPROM) the Pip-Boy shows a
+calibration screen before the main UI. Tap the center of each cross: four
+corner targets, then a center check. If the check lands more than 20 px away,
+or the corner taps barely differ, it starts over. The result (raw ranges,
+axis swap and inversion) is saved in EEPROM next to the device name. Click the
+dial to skip; the defaults are then saved so it is not asked again.
+
+To recalibrate later, hold the secondary encoder button while powering on to
+enter [setup mode](../screens/README.md#setup-mode) and choose
+**CALIBRATE TOUCH** (click the dial there to cancel).
+
+The defaults in `include/Hardware.h` come from the
 [Dragonfruit JC4827W543 port](https://github.com/SovGVD/Dragonfruit-JC4827W543-esp32/blob/main/docs/jc4827w543.md#calibrate-resistive-touch)
-defaults (raw 200–3900 on both axes, both axes inverted, pressure 400) and are
-not measured on an individual panel. Each new contact logs
-`Touch raw=x,y pressure=p screen=x,y` to the serial monitor. Touch the corners,
-set the raw minimum/maximum per axis so the top-left maps near `0,0` and the
-bottom-right near `479,271`, flip `touchInvertX`/`touchInvertY` or
-`touchSwapXY` if an axis is reversed or swapped, and raise `touchPressureMin`
-if light contacts register as taps.
+(raw 200–3900 on both axes, both axes inverted). `touchPressureMin` (400) is
+not calibrated; raise it if light contacts register as taps. Each new contact
+logs `Touch raw=x,y pressure=p screen=x,y` to the serial monitor, and a saved
+calibration is logged as `Touch calibration saved: ...`.
 
 The PlatformIO board configuration uses 240 MHz, 4 MB flash, DIO at 80 MHz,
 OPI PSRAM, USB CDC and the Huge APP partition (3 MB application, no OTA).

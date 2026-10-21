@@ -21,6 +21,20 @@ encoder to move through the on-screen keyboard and click to press a key; see the
 Incoming messages open a message window; tap, click or hold dismisses it. Games pause
 while that window is open and require a click to resume. Music keeps playing.
 
+## Setup mode
+
+Hold the secondary encoder button while powering on to open the setup menu.
+Turn to choose and click to select:
+
+| Item | Action |
+| --- | --- |
+| CHANGE NAME | Edit the device name used by chat. Turn to pick a character position and click; turn to pick the letter with the dial and click to set it. Select `[SUBMIT]` to save and return to the menu. |
+| CALIBRATE TOUCH | Run the [touch calibration](../hardware/README.md#calibration) and save it. |
+| SAVE AND EXIT | Save settings and restart. |
+
+The menu also shows the current name and whether touch is calibrated. On the
+very first start, touch calibration runs automatically once.
+
 ## Main tabs
 
 | Tab | Pages and current behavior |

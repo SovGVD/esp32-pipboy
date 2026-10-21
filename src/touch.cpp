@@ -3,12 +3,13 @@
 #include "Pipboy.h"
 
 namespace {
-const touch::Calibration calibration = {
+const touch::Calibration defaultCalibration = {
   hardware::touchRawXMin, hardware::touchRawXMax,
   hardware::touchRawYMin, hardware::touchRawYMax,
   hardware::touchSwapXY, hardware::touchInvertX, hardware::touchInvertY,
   hardware::touchPressureMin
 };
+touch::Calibration calibration = defaultCalibration;
 const SPISettings touchSpi(2000000, MSBFIRST, SPI_MODE0);
 touch::TapDetector tapDetector;
 bool isTouchReady = false;
@@ -57,6 +58,136 @@ bool touchSample(int& rawX, int& rawY, int& pressure)
   rawY = touch::median5(ys);
   return true;
 }
+
+
+touch::Calibration touchSavedCalibration()
+{
+  const pipboyTouchCalibration& saved = settings.touch;
+  const touch::Calibration result = {
+    saved.xMin, saved.xMax, saved.yMin, saved.yMax,
+    saved.swapXY != 0, saved.invertX != 0, saved.invertY != 0,
+    saved.pressureMin
+  };
+  return result;
+}
+
+void touchSaveCalibration(const touch::Calibration& found)
+{
+  pipboyTouchCalibration& saved = settings.touch;
+  saved.magic = PIPBOY_TOUCH_CALIBRATION_MAGIC;
+  saved.xMin = found.xMin;
+  saved.xMax = found.xMax;
+  saved.yMin = found.yMin;
+  saved.yMax = found.yMax;
+  saved.swapXY = found.swapXY;
+  saved.invertX = found.invertX;
+  saved.invertY = found.invertY;
+  saved.reserved = 0;
+  saved.pressureMin = found.pressureMin;
+  settingsCommit();
+  calibration = found;
+  Serial.printf("Touch calibration saved: x=%d..%d y=%d..%d swap=%d invert=%d,%d\n",
+    found.xMin, found.xMax, found.yMin, found.yMax, found.swapXY, found.invertX, found.invertY);
+}
+
+void touchDrawCross(int16_t x, int16_t y)
+{
+  gfx->drawLine(x - 12, y, x + 12, y, COLOR_MAIN);
+  gfx->drawLine(x, y - 12, x, y + 12, COLOR_MAIN);
+  gfx->drawRect(x - 3, y - 3, 7, 7, COLOR_MAIN);
+}
+}
+
+bool touchHasSavedCalibration()
+{
+  return settings.touch.magic == PIPBOY_TOUCH_CALIBRATION_MAGIC && touch::valid(touchSavedCalibration());
+}
+
+/**
+ * Blocking calibration screen: four corner targets, then a center check.
+ * The dial click skips (first boot, keeping the defaults) or cancels.
+ */
+void touchCalibrate(bool isFirstBoot)
+{
+  const uint8_t verifyStep = touch::calibrationTargets;
+  touch::PressCapture capture;
+  touch::Sample raw[touch::calibrationTargets] = {};
+  touch::Calibration found = calibration;
+  uint8_t step = 0;
+  const char* status = "";
+
+  const bool wasSubMenuEncoderControlList = isSubMenuEncoderControlList;
+  isSubMenuEncoderControlList = true; // so a click is reported, not used to enter a list
+  resetSubMenuButton();
+
+  while (isTouchReady) {
+    buttonsUpdate();
+    currentTime = micros();
+    if (currentTime - previousTime < LOOP_TIME) {
+      delay(1);
+      continue;
+    }
+    previousTime = currentTime;
+
+    if (isSubMenuButtonClicked || isSubMenuButtonLongPressed) {
+      if (isFirstBoot) {
+        // Do not ask again on every boot; CALIBRATE TOUCH in setup mode remains.
+        touchSaveCalibration(defaultCalibration);
+      }
+      break;
+    }
+
+    int rawX = 0, rawY = 0, pressure = 0;
+    const bool isDown = touchSample(rawX, rawY, pressure);
+    if (capture.update(isDown, rawX, rawY)) {
+      if (step < verifyStep) {
+        raw[step++] = capture.result();
+        status = "";
+        if (step == verifyStep && !touch::calibrate(raw, w, h, hardware::touchPressureMin, found)) {
+          step = 0;
+          status = "Taps too close. Try again.";
+        }
+      } else {
+        int x = -1, y = -1;
+        const touch::Sample check = capture.result();
+        if (touch::map(found, check.x, check.y, w, h, x, y) && abs(x - w / 2) <= 20 && abs(y - h / 2) <= 20) {
+          touchSaveCalibration(found);
+          break;
+        }
+        Serial.printf("Touch check missed: screen=%d,%d\n", x, y);
+        step = 0;
+        status = "Check missed. Try again.";
+      }
+    }
+
+    gfx->fillScreen(COLOR_SCREEN);
+    gfx->setTextColor(COLOR_MAIN);
+    gfx->setCursor(105, 80);
+    gfx->print(step < verifyStep ? "Tap the center of the cross" : "Check: tap the center cross");
+    gfx->setCursor(105, 104);
+    gfx->printf("TOUCH CALIBRATION %d/%d", step + 1, verifyStep + 1);
+    gfx->setCursor(105, 128);
+    gfx->print(isFirstBoot ? "Click dial to skip" : "Click dial to cancel");
+    gfx->setCursor(105, 200);
+    gfx->print(status);
+
+    int16_t targetX = w / 2, targetY = h / 2;
+    if (step < verifyStep) {
+      int x, y;
+      touch::calibrationTarget(step, w, h, x, y);
+      targetX = x;
+      targetY = y;
+    }
+    touchDrawCross(targetX, targetY);
+
+    #ifdef CANVAS
+      gfx->flush();
+    #endif
+    resetSubMenuButton();
+  }
+
+  isSubMenuEncoderControlList = wasSubMenuEncoderControlList;
+  resetSubMenuButton();
 }
 
 void touchSetup()
@@ -75,6 +206,10 @@ void touchSetup()
   touchReadAdc(0x90); // power down so PENIRQ is enabled
   digitalWrite(hardware::touchCs, HIGH);
   SPI.endTransaction();
+
+  if (touchHasSavedCalibration()) {
+    calibration = touchSavedCalibration();
+  }
 
   isTouchReady = true;
   Serial.printf("Resistive touch ready: CS=%d IRQ=%d\n", hardware::touchCs, hardware::touchIrq);
