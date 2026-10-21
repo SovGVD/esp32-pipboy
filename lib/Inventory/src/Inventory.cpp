@@ -64,6 +64,12 @@ void description(Canvas& canvas, const char* value) {
 }
 }
 
+unsigned firstVisible(const Category& category, uint16_t selection) {
+    selection = clampSelection(category, selection);
+    return std::min<unsigned>(selection > 2 ? selection - 2 : 0,
+        category.count > visibleRows ? category.count - visibleRows : 0);
+}
+
 void render(Canvas& canvas, size_t categoryIndex, uint16_t selection, bool browsing) {
     const auto* group = category(categoryIndex);
     if (!group || !group->count) {
@@ -71,12 +77,10 @@ void render(Canvas& canvas, size_t categoryIndex, uint16_t selection, bool brows
         return;
     }
     selection = clampSelection(*group, selection);
-    constexpr unsigned visibleRows = 6;
-    const unsigned start = std::min<unsigned>(selection > 2 ? selection - 2 : 0,
-        group->count > visibleRows ? group->count - visibleRows : 0);
+    const unsigned start = firstVisible(*group, selection);
     canvas.line(220, 64, 220, 250, dim);
     for (unsigned i = start; i < group->count && i < start + visibleRows; ++i) {
-        const int baseline = 85 + (i - start) * 26;
+        const int baseline = listTop + 18 + static_cast<int>(i - start) * listRowHeight;
         const bool active = i == selection;
         if (active) canvas.rectangle(8, baseline - 18, 204, 24, browsing ? ink : dim);
         canvas.text(12, baseline, group->items[i].name, active && browsing ? black : ink);

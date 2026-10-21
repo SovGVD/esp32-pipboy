@@ -45,6 +45,15 @@ private:
     Sample result_;
 };
 
+// Rows of a list as drawn on screen: the visible rows first..first+rows-1,
+// stacked rowHeight apart from top, each width wide from x.
+struct ListRegion {
+    int x, top, width, rowHeight;
+    unsigned first, rows;
+};
+// Returns the list index of the row under a point, or -1.
+int listIndexAt(const ListRegion& region, int x, int y);
+
 // Turns per-frame contact samples into single taps. A tap fires on the second
 // consecutive frame with contact, and the pen must be up for two frames before
 // the next tap, so resistive bounce on press or release does not repeat it.

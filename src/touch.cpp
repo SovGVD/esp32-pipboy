@@ -229,6 +229,11 @@ void touchUpdate()
     Serial.printf("Touch raw=%d,%d pressure=%d screen=%d,%d\n", rawX, rawY, pressure, x, y);
   }
   wasTouchDown = isDown;
+  isTouchDown = isDown;
+  if (isDown) {
+    touchDownX = x;
+    touchDownY = y;
+  }
 
   if (tapDetector.update(isDown, x, y)) {
     isTouchTapped = true;

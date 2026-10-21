@@ -90,5 +90,14 @@ int main() {
     assert(capture.update(false, 0, 0) && capture.result().x == 110 && capture.result().y == 210);
     assert(!capture.update(false, 0, 0));
 
-    std::cout << "Touch: calibration mapping, clamping, swap, median filter, tap debouncing, 4-point calibration and press capture passed\n";
+    // List rows map to their list index, including scrolled lists.
+    const touch::ListRegion rows = {8, 84, 454, 22, 3, 5};
+    assert(touch::listIndexAt(rows, 8, 84) == 3 && touch::listIndexAt(rows, 461, 105) == 3);
+    assert(touch::listIndexAt(rows, 100, 106) == 4 && touch::listIndexAt(rows, 100, 193) == 7);
+    assert(touch::listIndexAt(rows, 100, 194) == -1 && touch::listIndexAt(rows, 100, 83) == -1);
+    assert(touch::listIndexAt(rows, 7, 90) == -1 && touch::listIndexAt(rows, 462, 90) == -1);
+    const touch::ListRegion empty = {0, 0, 100, 0, 0, 3};
+    assert(touch::listIndexAt(empty, 10, 10) == -1);
+
+    std::cout << "Touch: list hit testing, calibration mapping, clamping, swap, median filter, tap debouncing, 4-point calibration and press capture passed\n";
 }

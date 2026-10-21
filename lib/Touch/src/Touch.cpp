@@ -106,6 +106,12 @@ bool PressCapture::update(bool down, int rawX, int rawY) {
     return true;
 }
 
+int listIndexAt(const ListRegion& region, int x, int y) {
+    if (region.rowHeight <= 0 || x < region.x || x >= region.x + region.width || y < region.top) return -1;
+    const unsigned row = static_cast<unsigned>((y - region.top) / region.rowHeight);
+    return row < region.rows ? static_cast<int>(region.first + row) : -1;
+}
+
 TapDetector::TapDetector() : downFrames_(0), upFrames_(0), armed_(true), x_(-1), y_(-1) {}
 
 bool TapDetector::update(bool down, int x, int y) {

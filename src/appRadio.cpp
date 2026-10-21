@@ -212,28 +212,13 @@ void appRadioPeerSelector()
     16
   );
 
-  const int16_t tappedRow = appRadioPeerRowAt(touchX, touchY);
-  if (isTouchTapped && !isDisplayMessageWindow && tappedRow >= 0 && tappedRow < menuIdx) {
-    listMenuNum = tappedRow;
-    isSubMenuEncoderControlList = true;
-  } else if (!isSubMenuButtonClicked || isDisplayMessageWindow) {
+  if (!isSubMenuButtonClicked || isDisplayMessageWindow) {
     return;
   }
 
   isChatBroadcast = listMenuNum == 0;
   strcpy(chatPeer, isChatBroadcast ? PIPBOY_RADIO_EMPTY : pipboyPeers[peerIndexes[listMenuNum]].name);
   isChatOpen = true;
-}
-
-int16_t appRadioPeerRowAt(int16_t x, int16_t y)
-{
-  // Same row boxes as the highlight drawn by drawListMenu().
-  const int16_t top = APP_RADIO_PEERS_Y - CHAR_HEIGHT + 4;
-  if (x < 10 || x > 200 || y < top) {
-    return -1;
-  }
-
-  return (y - top) / CHAR_HEIGHT;
 }
 
 void appRadioNoSignal()

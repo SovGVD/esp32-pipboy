@@ -39,4 +39,8 @@ const Category* category(size_t index);
 uint16_t clampSelection(const Category& category, uint16_t selection);
 void drawModel(Canvas& canvas, const Model& model, int x, int y, int width, int height);
 void render(Canvas& canvas, size_t categoryIndex, uint16_t selection, bool browsing);
+// Item list rows as render() draws them, for touch: rows of 26 px from y 67, x 8..211.
+constexpr unsigned visibleRows = 6;
+constexpr int listTop = 67, listRowHeight = 26, listX = 8, listWidth = 204;
+unsigned firstVisible(const Category& category, uint16_t selection);
 }

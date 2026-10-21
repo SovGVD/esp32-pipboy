@@ -86,6 +86,7 @@ void appPlayer() {
             gfx->print(displayText(label, 44));
         } else gfx->print(controls[i - count]);
     }
+    touchRegisterList(8, 84, 454, CHAR_HEIGHT, start, std::min<uint16_t>(visibleRows, listMenuItems - start));
     gfx->setTextColor(COLOR_MAIN);
     gfx->setCursor(10, 216);
     const auto selected = listMenuNum < count ? music::track(listMenuNum) : player.nowPlaying;

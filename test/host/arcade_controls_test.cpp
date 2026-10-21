@@ -20,6 +20,10 @@ const GFXfont uiFont={nullptr,nullptr,32,126,26};
 void setUiFont(){gfx->setFont(&uiFont);}
 void setupSubMenu(menuItem* menu,uint8_t){menu[0].g.x=60;}
 void drawMenu(menuItem*,uint8_t,uint8_t,uint16_t,uint16_t,uint16_t){}
+bool isTouchTapped=false,isTouchDown=false;
+int16_t touchX=-1,touchY=-1,touchDownX=-1,touchDownY=-1;
+struct {int16_t x,top,width,rowHeight;uint16_t first,rows;} launcherRows={};
+void touchRegisterList(int16_t x,int16_t top,int16_t width,int16_t rowHeight,uint16_t first,uint16_t rows){launcherRows={x,top,width,rowHeight,first,rows};}
 bool radioChatCapturesInput(){return false;}
 void radioChatTurn(int32_t){}
 bool shows(const char* text){return std::find(display.texts.begin(),display.texts.end(),text)!=display.texts.end();}
@@ -57,5 +61,23 @@ int main(){
     dataGameTurn(std::numeric_limits<int32_t>::min());frame(); // clamps without overflow
     onSubMenuLongPress(subMenuEncoderButton);frame();assert(listMenuItems==2);
     onSubMenuLongPress(subMenuEncoderButton);frame();assert(!isSubMenuEncoderControlList);
-    std::cout<<"Arcade controls: full detents, launcher, pause, tab return, modal dismissal, back and font restoration passed\n";
+    // Touch: launcher rows are registered as drawn, a tap above the ship pauses,
+    // and holding on the ship row steers it toward the finger.
+    assert(launcherRows.x==8 && launcherRows.top==73 && launcherRows.rowHeight==34 && launcherRows.rows==2);
+    listMenuNum=1;isSubMenuEncoderControlList=true;frame();click();
+    assert(dataGameCapturesInput() && shows("STAR PATROL"));
+    click();assert(!shows("CLICK TO START"));
+    isTouchTapped=true;touchX=240;touchY=120;dataGameTouch();isTouchTapped=false;frame();assert(shows("PAUSED"));
+    isTouchTapped=true;touchY=230;dataGameTouch();isTouchTapped=false;frame();assert(shows("PAUSED")); // steering row: no click
+    isTouchTapped=true;touchY=120;dataGameTouch();isTouchTapped=false;frame();assert(!shows("PAUSED"));
+    const int start=playerX();
+    isTouchDown=true;touchDownX=static_cast<int16_t>(start+100);touchDownY=225;
+    for(int i=0;i<3;++i){dataGameTouch();frame();}
+    assert(playerX()==start+90); // three frames at the 30 px/frame touch limit
+    for(int i=0;i<10;++i){dataGameTouch();frame();}
+    assert(playerX()==start+100); // settles on the finger
+    isTouchDown=false;
+    menuEncoder.count+=2;encoderUpdate();isTouchTapped=true;touchY=120;dataGameTouch();isTouchTapped=false;
+    menuEncoder.count-=2;encoderUpdate();frame();assert(shows("PAUSED")); // ignored while DATA is hidden
+    std::cout<<"Arcade controls: full detents, launcher, pause, tab return, modal dismissal, back, touch steering/pause and font restoration passed\n";
 }

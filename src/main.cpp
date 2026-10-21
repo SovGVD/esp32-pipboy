@@ -25,8 +25,8 @@ radioPeer pipboyPeers[PIPBOY_RADIO_MAX_PEERS] = {};
 bool isDisplayMessageWindow = false;
 String displayMessageWindowHeader, displayMessageWindowBody;
 bool isInSetupMode = false;
-bool isTouchTapped = false;
-int16_t touchX = -1, touchY = -1;
+bool isTouchTapped = false, isTouchDown = false;
+int16_t touchX = -1, touchY = -1, touchDownX = -1, touchDownY = -1;
 
 void setup()
 {
@@ -124,6 +124,7 @@ void loop(void)
 	if (currentTime - previousTime >= LOOP_TIME) {
     encoderUpdate();
     touchUpdate();
+    touchDispatch();
     previousTime = currentTime;
     gfx->fillScreen(COLOR_SCREEN);
     radioUpdate();
@@ -160,6 +161,10 @@ void setUiFont() {
 
 void drawMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItemNum, uint16_t color, uint16_t colorInactive, uint16_t menuXdelta)
 {
+  if (menu != menuItems) {
+    touchRegisterSubMenu(menu, menuItemsNum, menuXdelta);
+  }
+
   for(uint8_t i = 0; i < menuItemsNum; i++) {
     if (i == selectedMenuItemNum) {
       gfx->setTextColor(color);
@@ -207,6 +212,8 @@ void drawListMenu(menuItem* menu, uint8_t menuItemsNum, uint8_t selectedMenuItem
       endAt = MAX_LIST_MENU_ITEMS - 1;
     }
   }
+
+  touchRegisterList(menuX - 2, menuY - CHAR_HEIGHT + 4, menuMaxChars * CHAR_WIDTH + 5, CHAR_HEIGHT, startFrom, endAt - startFrom + 1);
 
   for(uint16_t i = startFrom; i <= endAt; i++) {
     if (i == selectedMenuItemNum) {

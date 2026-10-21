@@ -37,6 +37,11 @@ void drawCategory(size_t index) {
   DisplayCanvas canvas;
   gfx->setFont(&monofonto10pt7b);
   inventory::render(canvas, index, listMenuNum, isSubMenuEncoderControlList);
+  if (category) {
+    const unsigned first = inventory::firstVisible(*category, listMenuNum);
+    touchRegisterList(inventory::listX, inventory::listTop, inventory::listWidth, inventory::listRowHeight,
+                      first, min<unsigned>(inventory::visibleRows, category->count - first));
+  }
   setUiFont();
 }
 }

@@ -9,6 +9,17 @@ SetupPage setupPage = SetupPage::Menu;
 #define SETUP_MENU_ITEMS 3
 #define SETUP_MENU_Y 87
 
+// Touch areas of the name editor, matching what setupPipboyName() draws.
+#define SETUP_NAME_CELL_W 14
+#define SETUP_NAME_TOP 70
+#define SETUP_NAME_BOTTOM 115
+#define SETUP_SUBMIT_BOTTOM 152
+#define SETUP_PALETTE_X 5
+#define SETUP_PALETTE_TOP 166
+#define SETUP_PALETTE_COLUMNS 20
+#define SETUP_PALETTE_CELL_W 23
+#define SETUP_PALETTE_CELL_H 30
+
 menuItem setupModeMenu[SETUP_MENU_ITEMS] = {
   {"CHANGE NAME",     11, {0, 0, 0, 0}, setupMenuChangeName},
   {"CALIBRATE TOUCH", 15, {0, 0, 0, 0}, setupMenuCalibrateTouch},
@@ -33,6 +44,11 @@ void setupLoop() {
     currentTime = micros();
     if (currentTime - previousTime >= LOOP_TIME) {
       encoderUpdate();
+      touchUpdate();
+      if (isTouchTapped && setupPage == SetupPage::Menu) {
+        touchListTap();
+      }
+      touchClearRegions();
       previousTime = currentTime;
 
       didWeJustEnteredToCharEdit = isSubMenuEncoderControlList && !preIsSubMenuEncoderControlList;
@@ -139,7 +155,7 @@ void setupPipboyName()
 
   subMenuItems = sizeof(settings.pipboyName) - 1; // keep the NUL terminator
 
-  if (setupPipboyNameSubmit()) {
+  if (setupPipboyNameSubmit() || setupPipboyNameTouch()) {
     return;
   }
 
@@ -157,7 +173,7 @@ void setupPipboyName()
   }
 
   if (didWeJustSubmitOneCharEdit) {
-    settings.pipboyName[subMenuNum] = allowedChars[listMenuNum];
+    setupSetNameChar(subMenuNum, allowedChars[listMenuNum]);
   }
 
   for(uint8_t idx = 0; idx <= subMenuItems; idx++)
@@ -195,7 +211,79 @@ void setupPipboyName()
     }
   }
 
+  setupDrawNamePalette();
+
   subMenuItems++; // For [SUBMIT] button
+}
+
+void setupSetNameChar(uint8_t position, char symbol)
+{
+  // Earlier empty positions become spaces so the name does not end before this one.
+  for (uint8_t idx = 0; idx < position; idx++) {
+    if (settings.pipboyName[idx] == '\0') {
+      settings.pipboyName[idx] = ' ';
+    }
+  }
+  settings.pipboyName[position] = symbol;
+}
+
+void setupDrawNamePalette()
+{
+  // Every allowed character, to tap instead of turning the dial.
+  const char current = isSubMenuEncoderControlList ? allowedChars[listMenuNum] : settings.pipboyName[subMenuNum];
+  for (uint8_t idx = 0; allowedChars[idx] != '\0'; idx++) {
+    const int16_t x = SETUP_PALETTE_X + (idx % SETUP_PALETTE_COLUMNS) * SETUP_PALETTE_CELL_W;
+    const int16_t y = SETUP_PALETTE_TOP + (idx / SETUP_PALETTE_COLUMNS) * SETUP_PALETTE_CELL_H;
+    const bool isCurrent = allowedChars[idx] == current;
+    if (isCurrent) {
+      gfx->fillRect(x, y, SETUP_PALETTE_CELL_W - 2, SETUP_PALETTE_CELL_H - 2, COLOR_MAIN);
+    } else {
+      gfx->drawRect(x, y, SETUP_PALETTE_CELL_W - 2, SETUP_PALETTE_CELL_H - 2, COLOR_INACTIVE);
+    }
+    gfx->setTextColor(isCurrent ? COLOR_SCREEN : COLOR_MAIN);
+    gfx->setCursor(x + 6, y + 21);
+    gfx->print(allowedChars[idx] == ' ' ? '_' : allowedChars[idx]);
+  }
+}
+
+/**
+ * Tap a name position to select it, a palette character to set it (and move
+ * to the next position) or [SUBMIT] to save. Returns true when the page closed.
+ */
+bool setupPipboyNameTouch()
+{
+  if (!isTouchTapped) {
+    return false;
+  }
+
+  const uint8_t positions = sizeof(settings.pipboyName) - 1;
+  if (touchY >= SETUP_NAME_TOP && touchY < SETUP_NAME_BOTTOM && touchX < positions * SETUP_NAME_CELL_W) {
+    subMenuNum = touchX / SETUP_NAME_CELL_W;
+  } else if (touchY >= SETUP_NAME_BOTTOM && touchY < SETUP_SUBMIT_BOTTOM && touchX < CHAR_WIDTH * 9) {
+    settingsCommit();
+    setupShowMenu(0);
+    return true;
+  } else if (touchY >= SETUP_PALETTE_TOP && touchX >= SETUP_PALETTE_X) {
+    const uint16_t column = (touchX - SETUP_PALETTE_X) / SETUP_PALETTE_CELL_W;
+    const uint16_t row = (touchY - SETUP_PALETTE_TOP) / SETUP_PALETTE_CELL_H;
+    const uint16_t idx = row * SETUP_PALETTE_COLUMNS + column;
+    if (column >= SETUP_PALETTE_COLUMNS || idx >= strlen(allowedChars)) {
+      return false;
+    }
+    setupSetNameChar(subMenuNum < positions ? subMenuNum : positions - 1, allowedChars[idx]);
+    if (subMenuNum < positions - 1) {
+      subMenuNum++;
+    }
+  } else {
+    return false;
+  }
+
+  // Leave a dial edit in progress without applying its letter.
+  isSubMenuEncoderControlList = false;
+  preIsSubMenuEncoderControlList = false;
+  didWeJustEnteredToCharEdit = false;
+  didWeJustSubmitOneCharEdit = false;
+  return false;
 }
 
 bool setupPipboyNameSubmit()
